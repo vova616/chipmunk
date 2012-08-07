@@ -5,7 +5,7 @@ import (
 	//. "chipmunk/transform"
 	"math"
 	"time"
-	"fmt"
+	//"fmt"
 ) 
 
 type Space struct {
@@ -80,7 +80,7 @@ type ContactBuffer struct {
 func NewSpace() (space *Space) {
 
 	space = &Space{}
-	space.Iterations = 10 
+	space.Iterations = 20 
  
 	space.Gravity = Vector_Zero
 
@@ -165,8 +165,8 @@ func (space *Space) Step(dt Float) {
 		arb.applyCachedImpulse(dt_coef)
 	}
 	
-	fmt.Println("STEP")
-	for i:=0; i<10; i++ {
+	//fmt.Println("STEP")
+	for i:=0; i<space.Iterations; i++ {
 		for _,arb := range space.Arbiters {
 			arb.applyImpulse()
 		}
