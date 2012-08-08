@@ -195,7 +195,7 @@ func (body *Body) UpdateVelocity(gravity Vect, damping, dt Float) {
 	
 	body.v = Add(Mult(body.v, damping), Mult(Add(gravity, Mult(body.f, body.m_inv)), dt))
 	
-	body.w = body.w*damping + body.t*body.i_inv*dt
+	body.w = (body.w*damping) + (body.t*body.i_inv*dt)
 
 }
 

@@ -2,10 +2,12 @@ package chipmunk
 
 import (
 	. "chipmunk/vect"
+	"time"
 )	
 
-type SpatialIndexQueryFunc func(a,b interface{}, data interface{})
-type HashSetIterator func(node *Node,  data interface{})
+type SpatialIndexQueryFunc func(a,b Indexable, data Data)
+type ReindexShapesFunc func(a,b *Shape, space *Space)
+type HashSetIterator func(node *Node, data Data)
 
 	
 type SpatialIndex struct {
@@ -14,7 +16,7 @@ type SpatialIndex struct {
 	staticIndex, dynamicIndex SpatialIndexClass
 }
 
-func SpatialIndexCollideStatic(dynamicIndex, staticIndex *SpatialIndex, fnc SpatialIndexQueryFunc, data interface{}) {
+func SpatialIndexCollideStatic(dynamicIndex, staticIndex *SpatialIndex, fnc SpatialIndexQueryFunc, data Data) {
 	if staticIndex.Count() > 0 {
 		context := dynamicToStaticContext{staticIndex, fnc, data};
 		dynamicIndex.Each(dynamicToStaticIter, context)
@@ -39,12 +41,16 @@ func NewSpartialIndex(class SpatialIndexClass, staticIndex *SpatialIndex) (index
 type dynamicToStaticContext struct {
 	staticIndex *SpatialIndex 
 	queryFunc SpatialIndexQueryFunc
-	data interface{}
+	data Data
 } 
 
-func dynamicToStaticIter(node *Node,  data interface{}) {
+func (d dynamicToStaticContext) Space() *Space {
+	return nil
+}
+
+func dynamicToStaticIter(node *Node,  data Data) {
 	context := data.(dynamicToStaticContext)
-	context.staticIndex.Query(node, node.bb, context.queryFunc, context.data)
+	context.staticIndex.Query(node.obj, node.obj.AABB(), context.queryFunc, context.data)
 }
 
 
@@ -52,8 +58,14 @@ func dynamicToStaticIter(node *Node,  data interface{}) {
 type Indexable interface {
 	Hashable
 	AABB() AABB
+	Shape() *Shape
 	Velocity() (Vect,bool)
 }
+
+type Data interface {
+	Space() *Space
+}
+
 
 type Hashable interface {
 	Hash() HashValue
@@ -64,7 +76,7 @@ type SpatialIndexClass interface {
 	Destroy()
 
 	Count() int
-	Each(fnc HashSetIterator, data interface{})
+	Each(fnc HashSetIterator, data Data)
 
 	Contains(obj Indexable) bool
 	Insert(obj Indexable) 
@@ -72,8 +84,10 @@ type SpatialIndexClass interface {
 
 	Reindex()
 	ReindexObject(obj Indexable)
-	ReindexQuery(fnc SpatialIndexQueryFunc, data interface{})
-
-	Query(obj interface{}, aabb AABB, fnc SpatialIndexQueryFunc, data interface{})
-	SegmentQuery(obj interface{}, a,b Vect, t_exit Float, fnc func(), data interface{})
+	ReindexQuery(fnc SpatialIndexQueryFunc, data Data)
+	
+	Stamp() time.Duration
+	
+	Query(obj Indexable, aabb AABB, fnc SpatialIndexQueryFunc, data Data)
+	SegmentQuery(obj Indexable, a,b Vect, t_exit Float, fnc func(), data Data)
 }

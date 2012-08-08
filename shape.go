@@ -68,7 +68,9 @@ func (shape *Shape) SetElasticity(e Float) {
 	shape.e = e
 }
 
-
+func (shape *Shape) Shape() *Shape {
+	return shape
+}
 
 
 func (shape *Shape) AABB()  AABB {

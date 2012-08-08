@@ -32,7 +32,7 @@ func FMax (a,b Float) Float {
 	return b 
 }
 
-func Clamp (val,min,max Float) Float {
+func FClamp (val,min,max Float) Float {
 	if val < min {
 		return min
 	} else if val > max {
@@ -178,7 +178,14 @@ func Dot(v1, v2 Vect) Float {
 
 //same as CrossVV.
 func Cross(a, b Vect) Float {
-	return CrossVV(a, b)
+	return (a.X*b.Y) - (a.Y*b.X)
+}
+
+func Clamp(v Vect, l Float) Vect {
+	if Dot(v,v) > l*l {
+		return Mult(Normalize(v), l)
+	} 
+	return v
 }
 
 //cross product of two vectors.

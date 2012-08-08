@@ -4,15 +4,16 @@ import (
 	//"container/list"
 	"time"
 	. "chipmunk/vect"
+	//"fmt"
 )
 
 
-var VoidQueryFunc = func(a,b interface{}, data interface{}) {}
+var VoidQueryFunc = func(a,b Indexable, data Data) {}
 
 
 type HashSet map[HashValue]*Node
 
-func (set HashSet) Each(fnc HashSetIterator, data interface{}) {
+func (set HashSet) Each(fnc HashSetIterator, data Data) {
 	for _,node := range set {
 		fnc(node,data)
 	}
@@ -180,11 +181,17 @@ func GetTree(index SpatialIndexClass) *BBTree {
 	return nil
 }
 
+
+
 func (tree *BBTree) GetStamp() time.Duration {
-	dynamicTree := GetTree(tree.SpatialIndex.dynamicIndex)
+	dynamicTree := tree.SpatialIndex.dynamicIndex
 	if dynamicTree != nil {
-		return dynamicTree.stamp
+		return dynamicTree.Stamp()
 	} 
+	return tree.stamp
+}
+
+func (tree *BBTree) Stamp() time.Duration {
 	return tree.stamp
 }
 
@@ -366,19 +373,11 @@ func (tree *BBTree)  PairsClear(leaf *Node) {
 	}
 }
 
-func leafUpdate(leaf *Node , treeI interface{}) {
-	tree,ok := treeI.(*BBTree)
-	if !ok {
-		panic("Something is fucked up")
-	}
-	LeafUpdate(leaf,tree)
-}
-
 func LeafUpdate(leaf *Node , tree *BBTree) bool {
 	root := tree.root;
 	bb := leaf.obj.AABB()
 	
-	if leaf.bb.Contains(bb) {
+	if !leaf.bb.Contains(bb) {
 		leaf.bb = tree.GetBB(leaf.obj)
 		
 		root = tree.SubtreeRemove(root, leaf)
@@ -393,17 +392,23 @@ func LeafUpdate(leaf *Node , tree *BBTree) bool {
 	return false;
 }
 
-func (tree *BBTree) Each(fnc HashSetIterator, data interface{}) {
+func (tree *BBTree) Each(fnc HashSetIterator, data Data) {
 	tree.leaves.Each(fnc, data)
 }
 
-func (tree *BBTree) ReindexQuery(fnc SpatialIndexQueryFunc, data interface{}) {
+func (tree *BBTree) Each2(fnc HashSetIterator, data Data) {
+	tree.leaves.Each(fnc, data)
+}
+
+func (tree *BBTree) ReindexQuery(fnc SpatialIndexQueryFunc, data Data) {
 	if tree.root == nil {
 	 return;
 	}
 	
 	// LeafUpdate() may modify tree->root. Don't cache it.
-	tree.leaves.Each(leafUpdate,tree)
+	for _,node := range tree.leaves {
+		LeafUpdate(node,tree)
+	}
 	
 	
 	staticIndex := GetTree(tree.SpatialIndex.staticIndex)
@@ -421,13 +426,13 @@ func (tree *BBTree) ReindexQuery(fnc SpatialIndexQueryFunc, data interface{}) {
 	tree.IncrementStamp();
 }
 
-func (tree *BBTree) Query(obj interface{}, aabb AABB, fnc SpatialIndexQueryFunc, data interface{}) {
+func (tree *BBTree) Query(obj Indexable, aabb AABB, fnc SpatialIndexQueryFunc, data Data) {
 	if tree.root != nil {
 	 	SubtreeQuery(tree.root, obj, aabb, fnc, data);
 	}
 }
 
-func SubtreeQuery(subtree *Node, obj interface{},  bb AABB, fnc SpatialIndexQueryFunc , data interface{}) {
+func SubtreeQuery(subtree *Node, obj Indexable,  bb AABB, fnc SpatialIndexQueryFunc , data Data) {
 	if TestOverlap(subtree.bb,bb) {
 		if subtree.IsLeaf() {
 			fnc(obj, subtree.obj, data);
@@ -442,7 +447,7 @@ type MarkContext struct{
 	tree *BBTree;
 	staticRoot *Node;
 	fnc SpatialIndexQueryFunc;
-	data interface{};
+	data Data;
 }
 
 func (context *MarkContext)  MarkSubtree(subtree *Node) {
@@ -491,6 +496,7 @@ func (context *MarkContext) MarkLeaf(leaf *Node) {
 		}
 	} else {
 		pair := leaf.pairs;
+		i := 0
 		for pair != nil {
 			if leaf == pair.b.leaf {
 				context.fnc(pair.a.leaf.obj, leaf.obj, context.data);
@@ -498,6 +504,8 @@ func (context *MarkContext) MarkLeaf(leaf *Node) {
 			} else {
 				pair = pair.a.next;
 			}
+			i++
 		}
+		//fmt.Println(i)
 	}
 }

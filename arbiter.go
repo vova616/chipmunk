@@ -28,7 +28,7 @@ type Arbiter struct {
 	// The two colliding shapes.
 	ShapeA, ShapeB *Shape
 	// The contact points between the shapes.
-	Contacts [MaxPoints]Contact
+	Contacts *[MaxPoints]*Contact
 	// The number of contact points.
 	NumContacts int
 
@@ -72,6 +72,7 @@ func CreateArbiter(sa, sb *Shape) *Arbiter {
 
 	arb.nodeA = new(ArbiterEdge)
 	arb.nodeB = new(ArbiterEdge)
+	arb.state =  arbiterStateFirstColl
 
 	return arb
 }
@@ -92,17 +93,17 @@ func (arb1 *Arbiter) equals(arb2 *Arbiter) bool {
 	return false
 }
 
-func (arb *Arbiter) update(contacts *[MaxPoints]Contact, numContacts int) {
-	oldContacts := &arb.Contacts
+func (arb *Arbiter) update(contacts *[MaxPoints]*Contact, numContacts int) {
+	oldContacts := arb.Contacts
 	oldNumContacts := arb.NumContacts
 
 	sa := arb.ShapeA
 	sb := arb.ShapeB
 
 	for i := 0; i < oldNumContacts; i++ {
-		oldC := &oldContacts[i]
+		oldC := oldContacts[i]
 		for j := 0; j < numContacts; j++ {
-			newC := &contacts[j]
+			newC := contacts[j]
 
 			if newC.hash == oldC.hash {
 				newC.jnAcc = oldC.jnAcc
@@ -112,7 +113,7 @@ func (arb *Arbiter) update(contacts *[MaxPoints]Contact, numContacts int) {
 		}
 	}
 
-	arb.Contacts = *contacts
+	arb.Contacts = contacts
 	arb.NumContacts = numContacts
 
 	arb.u = sa.u * sb.u
@@ -127,7 +128,7 @@ func (arb *Arbiter) preStep(inv_dt, slop, bias vect.Float) {
 	b := arb.ShapeB.Body
 
 	for i := 0; i < arb.NumContacts; i++ {
-		con := &arb.Contacts[i]
+		con := arb.Contacts[i]
 
 		// Calculate the offsets.
 		con.r1 = vect.Sub(con.p, a.p)
@@ -155,25 +156,99 @@ func (arb *Arbiter) preStep(inv_dt, slop, bias vect.Float) {
 
 func (arb *Arbiter) applyCachedImpulse(dt_coef vect.Float) {
 	if arb.state == arbiterStateFirstColl && arb.NumContacts > 0 {
-		arb.state = arbiterStateNormal
 		return
 	}
-	
+	//println("asd")
 	a := arb.ShapeA.Body
 	b := arb.ShapeB.Body
 	for i := 0; i < arb.NumContacts; i++ {
-		con := &arb.Contacts[i]
+		con := arb.Contacts[i]
 		j := transform.RotateVect(con.n, transform.Rotation{con.jnAcc, con.jtAcc})
 		apply_impulses(a, b, con.r1, con.r2, vect.Mult(j, dt_coef))
 	}
 } 
+
+func (arb *Arbiter) applyImpulse2() {
+	a := arb.ShapeA.Body
+	b := arb.ShapeB.Body 
+
+	for i := 0; i < arb.NumContacts; i++ {
+		con := arb.Contacts[i]
+		n := con.n
+		r1 := con.r1
+		r2 := con.r2
+
+	
+		vbn := ((((-r2.Y*b.w_bias)+b.v_bias.X)-((-r1.Y*a.w_bias)+a.v_bias.X))*n.X) + ((((r2.X*b.w_bias)+b.v_bias.Y)-((r1.X*a.w_bias)+a.v_bias.Y))*n.Y)
+
+		// Calculate the relative velocity.
+		vr := vect.Vect{(-r2.Y*b.w+b.v.X)-(-r1.Y*a.w+a.v.X), (r2.X*b.w+b.v.Y)-(r1.X*a.w+a.v.Y)}
+		vrn := (vr.X*n.X) + (vr.Y*n.Y)
+		
+		// Calculate the relative tangent velocity.
+		vrt := ((vr.X+arb.Surface_vr.X)*-n.Y) + ((vr.Y+arb.Surface_vr.Y)*n.X)
+
+		// Calculate and clamp the bias impulse.
+		jbn := (con.bias - vbn) * con.nMass
+		jbnOld := con.jBias
+		con.jBias = jbnOld+jbn
+		if 0 > con.jBias {
+			con.jBias = 0
+		}
+		
+		// Calculate and clamp the normal impulse.
+		jn := -(con.bounce + vrn) * con.nMass
+		jnOld := con.jnAcc
+		con.jnAcc = jnOld+jn
+		if 0 > con.jnAcc {
+			con.jnAcc = 0
+		}
+
+
+		// Calculate and clamp the friction impulse.
+		jtMax := arb.u * con.jnAcc
+		jt := -vrt * con.tMass
+		jtOld := con.jtAcc
+		con.jtAcc = jtOld+jt
+		if con.jtAcc > jtMax {
+			con.jtAcc = jtMax
+		} else if con.jtAcc < -jtMax {
+			con.jtAcc = -jtMax
+		}
+ 
+
+		jj := (con.jBias-jbnOld)
+		j := vect.Vect{n.X*jj, n.Y*jj}
+		
+		a.v_bias = vect.Vect{(-j.X*a.m_inv)+a.v_bias.X, (-j.Y*a.m_inv)+a.v_bias.Y}
+		a.w_bias += a.i_inv * ((r1.X*-j.Y) - (r1.Y*-j.X))
+
+		b.v_bias = vect.Vect{(j.X*b.m_inv)+b.v_bias.X, (j.Y*b.m_inv)+b.v_bias.Y}
+		b.w_bias += b.i_inv * ((r2.X*j.Y) - (r2.Y*j.X))
+
+
+		jc := vect.Vect{con.jnAcc - jnOld, con.jtAcc - jtOld}
+
+		j = vect.Vect{		
+		X: (n.X*jc.X) - (n.Y*jc.Y),
+		Y: (n.X*jc.Y) + (n.Y*jc.X),
+		}
+		 
+		a.v = vect.Vect{(-j.X*a.m_inv)+a.v.X, (-j.Y*a.m_inv)+a.v.Y}
+		a.w += a.i_inv * ((r1.X*-j.Y) - (r1.Y*-j.X))
+		
+		b.v = vect.Vect{(j.X*b.m_inv)+b.v.X, (j.Y*b.m_inv)+b.v.Y}
+		b.w += b.i_inv * ((r2.X*j.Y) - (r2.Y*j.X))
+	}
+}
+
 
 func (arb *Arbiter) applyImpulse() {
 	a := arb.ShapeA.Body
 	b := arb.ShapeB.Body
 
 	for i := 0; i < arb.NumContacts; i++ {
-		con := &arb.Contacts[i]
+		con := arb.Contacts[i]
 		n := con.n
 		r1 := con.r1
 		r2 := con.r2
@@ -207,18 +282,8 @@ func (arb *Arbiter) applyImpulse() {
 		jtMax := arb.u * con.jnAcc
 		jt := -vrt * con.tMass
 		jtOld := con.jtAcc
-		con.jtAcc = vect.Clamp(jtOld+jt, -jtMax, jtMax)
+		con.jtAcc = vect.FClamp(jtOld+jt, -jtMax, jtMax)
 
-
-		//fmt.Println("con.jnAcc", con.jnAcc, "jnOld", jnOld, "delta", con.jnAcc - jnOld, "j", transform.RotateVect(n, transform.Rotation{con.jnAcc - jnOld, con.jtAcc - jtOld}))
-		//fmt.Println("collision", b.v, "r1", r1, "r2", r2, "normal", n, )	
-		//fmt.Println("collision2", "jBias", con.jBias, "jnAcc", con.jnAcc, "jtAcc", con.jtAcc, "jtOld", jtOld)	
-		//fmt.Println("vrn", vrn, "vr", vr, "vbn", vbn, "b.Velocity", b.Velocity, "con.nMass", con.nMass )	
-
-
-		//fmt.Println("aV", a.v, "bV", b.v, r1, r2)
-
-		//av, bv := a.v, b.v
 
 		// Apply the bias impulse.
 		apply_bias_impulses(a, b, r1, r2, vect.Mult(n, con.jBias-jbnOld))
@@ -226,13 +291,6 @@ func (arb *Arbiter) applyImpulse() {
 		// Apply the final impulse.
 		apply_impulses(a, b, r1, r2, transform.RotateVect(n, transform.Rotation{con.jnAcc - jnOld, con.jtAcc - jtOld}))
 		 
-		//fmt.Println("aW", a.w, "bW", b.w, "aa", a.a, "ba", b.a, "bv", b.v)	
-		 
-		//fmt.Println("~",con.dist, con.jBias, con.jnAcc, con.jtAcc, a.w, b.w, a.v, b.v, av, bv );
-		//fmt.Println("con.jBias", con.jBias, "con.jnAcc", con.jnAcc, "con.jtAcc", con.jtAcc,  jtOld, -vrt)
-		//fmt.Println("con.bias", con.bias, "arb.u", arb.u, "con.nMass", con.nMass, "rotate", transform.RotateVect(n, transform.Rotation{con.jnAcc - jnOld, con.jtAcc - jtOld}))
-		//fmt.Println("aVelocity", a.AngularVelocity, "bVelocity", b.AngularVelocity, "aBias", a.w_bias, "bBias", b.w_bias)	
-		//fmt.Println("aVelocity", a.v, "bVelocity", b.v)	
-		//fmt.Println("")
 	}
 }
+

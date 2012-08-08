@@ -2,6 +2,8 @@ package chipmunk
 
 import (
 	"sync/atomic"
+	"unsafe"
+	
 )	
 
 var hashCounter = uint32(0)
@@ -20,6 +22,7 @@ type DefaultHash struct {
 func (h *DefaultHash) Hash() HashValue {
 	if h.hash == 0 {
 		h.hash = HashValue(atomic.AddUint32(&hashCounter, 1))
+		h.hash = HashValue(uintptr(unsafe.Pointer(h)))
 		if h.hash == 0 {
 			panic("Hash overflowed")
 		} 

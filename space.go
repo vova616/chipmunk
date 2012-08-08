@@ -5,8 +5,10 @@ import (
 	//. "chipmunk/transform"
 	"math"
 	"time"
-	//"fmt"
+	"fmt"
 ) 
+
+const Debug = true
 
 type Space struct {
 
@@ -107,16 +109,28 @@ func (space *Space) Step(dt Float) {
 		return
 	}
 	
+	stepStart := time.Now()
 	
 	
 	bodies := space.Bodies
 	 
+		
+	for _,arb := range space.Arbiters {
+		arb.state = arbiterStateNormal
+	}
+		
 	space.Arbiters = make([]*Arbiter, 0)
 
 	prev_dt := space.curr_dt
 	space.curr_dt = dt
 
 	space.stamp++
+	
+	for h,arb := range space.cachedArbiters {
+		if space.stamp - arb.stamp > time.Duration(space.collisionPersistence) {
+			delete(space.cachedArbiters, h)
+		}
+	}
 
 	
 
@@ -128,7 +142,13 @@ func (space *Space) Step(dt Float) {
 	for _, body := range space.AllBodies {
 		body.UpdateShapes()
 	}
+	
+	start := time.Now()
 	space.activeShapes.ReindexQuery(spaceCollideShapes, space)
+	end := time.Now();
+	if Debug {
+		fmt.Println("spaceCollideShapes time", end.Sub(start))
+	}
 
 	for _,arb := range space.Arbiters {
 	
@@ -161,26 +181,40 @@ func (space *Space) Step(dt Float) {
 	if prev_dt != 0 {
 		dt_coef = dt/prev_dt
 	}
+	//fmt.Println(len(space.Arbiters))
 	for _,arb := range space.Arbiters {
 		arb.applyCachedImpulse(dt_coef)
 	}
 	
 	//fmt.Println("STEP")
+	start = time.Now()
 	for i:=0; i<space.Iterations; i++ {
 		for _,arb := range space.Arbiters {
 			arb.applyImpulse()
 		}
 	}
+	end = time.Now();
+	stepEnd := time.Now()
+	if Debug {
+		fmt.Println("applyImpulse time", end.Sub(start), "space.Arbiters", len(space.Arbiters))
+		fmt.Println("stepTime", stepEnd.Sub(stepStart))
+	}
+	
 	
 
 }
+
+func (space *Space) Space() *Space {
+	return space
+}
+
 
 func (space *Space) NewContactBuffer() *ContactBufferHeader {
 	return &ContactBufferHeader{}
 }
 
-func  spaceCollideShapes(a, b interface{}, space interface{}) {
-	SpaceCollideShapes(a.(*Shape), b.(*Shape), space.(*Space))
+func  spaceCollideShapes(a, b Indexable, space Data) {
+	SpaceCollideShapes(a.Shape(), b.Shape(), space.Space())
 }
 
 func SpaceCollideShapes(a, b *Shape, space *Space) {
@@ -201,10 +235,10 @@ func SpaceCollideShapes(a, b *Shape, space *Space) {
 	}
 
 	// Narrow-phase collision detection.
-	var contacts *[MaxPoints]Contact = new([MaxPoints]Contact)
+	var contacts *[MaxPoints]*Contact = new([MaxPoints]*Contact) 
 	
 	for i := 0;i<MaxPoints;i++ {
-		contacts[i] = Contact{}
+		contacts[i] = &Contact{}
 	}
 	
 	numContacts := collide(contacts, a, b);
@@ -219,14 +253,18 @@ func SpaceCollideShapes(a, b *Shape, space *Space) {
 	
 	arbHashID := hashPair(a.Hash()*20, b.Hash()*10);
 	
-	arb := CreateArbiter(a,b) 
-	arb.update(contacts, numContacts)
+	var arb *Arbiter 
 	
-	
-	_, exist := space.cachedArbiters[arbHashID]
-	if exist {
-		//println("hash id already exists")
+	arbt, exist := space.cachedArbiters[arbHashID]
+	if exist && 
+	(
+	 (arbt.ShapeA == a && arbt.ShapeB == b) || 
+	 (arbt.ShapeA == b && arbt.ShapeB == a)) {
+		arb = arbt
+	} else {
+		arb = CreateArbiter(a,b)
 	}
+	arb.update(contacts, numContacts)
 	
 	space.cachedArbiters[arbHashID] = arb
 	
