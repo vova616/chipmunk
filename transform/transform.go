@@ -46,7 +46,7 @@ func (rot *Rotation) RotateVectInv(v vect.Vect) vect.Vect {
 		Y: (-v.X*rot.S) + (v.Y*rot.C),
 	}
 }
-
+ 
 func RotateVect(v vect.Vect, r Rotation) vect.Vect {
 	return r.RotateVect(v)
 }

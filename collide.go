@@ -5,7 +5,7 @@ import (
 	"log"
 	"math"
 	//"fmt"
-)
+) 
 
 type collisionHandler func(contacts *[MaxPoints]*Contact, sA, sB *Shape) int
 

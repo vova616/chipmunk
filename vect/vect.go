@@ -1,7 +1,7 @@
 package vect
 
 import (
-	"math" 
+	"math"  
 )
 
 type Float float32

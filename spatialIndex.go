@@ -62,9 +62,7 @@ type Indexable interface {
 	Velocity() (Vect,bool)
 }
 
-type Data interface {
-	Space() *Space
-}
+type Data interface {}
 
 
 type Hashable interface {

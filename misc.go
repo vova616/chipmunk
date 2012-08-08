@@ -18,17 +18,17 @@ func k_scalar(a, b *Body, r1, r2, n vect.Vect) vect.Float {
 	return value
 }
 
-func relative_velocity(a, b *Body, r1, r2 vect.Vect) vect.Vect {
+
+func relative_velocity2(a, b *Body, r1, r2 vect.Vect) vect.Vect {
 	v1 := vect.Add(b.v, vect.Mult(vect.Perp(r2), b.w))
 	v2 := vect.Add(a.v, vect.Mult(vect.Perp(r1), a.w))
 	return vect.Sub(v1, v2)
 }
 
-/*
 func relative_velocity(a, b *Body, r1, r2 vect.Vect) vect.Vect {
 	return vect.Vect{(-r2.Y*b.w+b.v.X)-(-r1.Y*a.w+a.v.X), (r2.X*b.w+b.v.Y)-(r1.X*a.w+a.v.Y)}
 }
- */
+ 
 func normal_relative_velocity(a, b *Body, r1, r2, n vect.Vect) vect.Float {
 	return vect.Dot(relative_velocity(a, b, r1, r2), n)
 }
@@ -76,4 +76,26 @@ func apply_bias_impulses(a, b *Body, r1, r2, j vect.Vect) {
 	b.v_bias = vect.Vect{(j.X*b.m_inv)+b.v_bias.X, (j.Y*b.m_inv)+b.v_bias.Y}
 	b.w_bias += b.i_inv * ((r2.X*j.Y) - (r2.Y*j.X))
 }
+<<<<<<< HEAD
+=======
+ 
+/*
+func apply_impulses(a, b *Body, r1, r2, j vect.Vect) {
+	
+	a.v = vect.Vect{(-j.X*a.m_inv)+a.v.X, (-j.Y*a.m_inv)+a.v.Y}
+	a.w += a.i_inv * ((r1.X*-j.Y) - (r1.Y*-j.X))
+	
+	b.v = vect.Vect{(j.X*b.m_inv)+b.v.X, (j.Y*b.m_inv)+b.v.Y}
+	b.w += b.i_inv * ((r2.X*j.Y) - (r2.Y*j.X))
+}
+
+func apply_bias_impulses(a, b *Body, r1, r2, j vect.Vect) {
+
+	a.v_bias = vect.Vect{(-j.X*a.m_inv)+a.v_bias.X, (-j.Y*a.m_inv)+a.v_bias.Y}
+	a.w_bias += a.i_inv * ((r1.X*-j.Y) - (r1.Y*-j.X))
+
+	b.v_bias = vect.Vect{(j.X*b.m_inv)+b.v_bias.X, (j.Y*b.m_inv)+b.v_bias.Y}
+	b.w_bias += b.i_inv * ((r2.X*j.Y) - (r2.Y*j.X))
+}
+>>>>>>> Performance improvement
 */

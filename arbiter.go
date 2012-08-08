@@ -22,7 +22,7 @@ const (
 )
 
 // The maximum number of ContactPoints a single Arbiter can have.
-const MaxPoints = 2
+const MaxPoints = 2 
 
 type Arbiter struct {
 	// The two colliding shapes.
@@ -168,9 +168,9 @@ func (arb *Arbiter) applyCachedImpulse(dt_coef vect.Float) {
 	}
 } 
 
-func (arb *Arbiter) applyImpulse2() {
+func (arb *Arbiter) applyImpulse() {
 	a := arb.ShapeA.Body
-	b := arb.ShapeB.Body 
+	b := arb.ShapeB.Body   
 
 	for i := 0; i < arb.NumContacts; i++ {
 		con := arb.Contacts[i]
@@ -243,7 +243,7 @@ func (arb *Arbiter) applyImpulse2() {
 }
 
 
-func (arb *Arbiter) applyImpulse() {
+func (arb *Arbiter) applyImpulse2() {
 	a := arb.ShapeA.Body
 	b := arb.ShapeB.Body
 

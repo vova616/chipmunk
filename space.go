@@ -8,7 +8,7 @@ import (
 	"fmt"
 ) 
 
-const Debug = true
+const Debug = false
 
 type Space struct {
 
@@ -188,11 +188,30 @@ func (space *Space) Step(dt Float) {
 	
 	//fmt.Println("STEP")
 	start = time.Now()
-	for i:=0; i<space.Iterations; i++ {
+	
+	//done := make(chan bool, 8)
+	
+	//for j:=0;j<8;j++ {
+		//go func() {
+	for i:=0; i<space.Iterations; i++ {	
 		for _,arb := range space.Arbiters {
+			if arb.ShapeA.IsSensor || arb.ShapeB.IsSensor {
+				continue
+			}
 			arb.applyImpulse()
-		}
+		}	
 	}
+		//	done <- true
+	//	}()
+	//}
+	
+	//for i:=0; i<8; i++ {
+	//	<-done
+	//}
+	
+	
+	
+	
 	end = time.Now();
 	stepEnd := time.Now()
 	if Debug {
@@ -213,8 +232,8 @@ func (space *Space) NewContactBuffer() *ContactBufferHeader {
 	return &ContactBufferHeader{}
 }
 
-func  spaceCollideShapes(a, b Indexable, space Data) {
-	SpaceCollideShapes(a.Shape(), b.Shape(), space.Space())
+func  spaceCollideShapes(a, b Indexable, null Data) {
+	SpaceCollideShapes(a.Shape(), b.Shape(), a.Shape().space)
 }
 
 func SpaceCollideShapes(a, b *Shape, space *Space) {
@@ -228,11 +247,11 @@ func SpaceCollideShapes(a, b *Shape, space *Space) {
 	
 	//cpCollisionHandler *handler = cpSpaceLookupHandler(space, a->collision_type, b->collision_type);
 	
-	sensor := a.IsSensor || b.IsSensor;
+	//sensor := a.IsSensor || b.IsSensor;
 	//if(sensor && handler == &cpDefaultCollisionHandler) return;
-	if sensor {
-		return
-	}
+	//if sensor {
+	//	return
+	//}
 
 	// Narrow-phase collision detection.
 	var contacts *[MaxPoints]*Contact = new([MaxPoints]*Contact) 
@@ -364,7 +383,7 @@ func (space *Space) AddBody(body *Body) *Body {
 
 	return body
 }
-
+ 
 func (space *Space) AddShape(shape *Shape) *Shape {
 	if shape.space != nil {
 		println("This shape is already added to a space and cannot be added to another.")
@@ -377,7 +396,7 @@ func (space *Space) AddShape(shape *Shape) *Shape {
 	//	space.staticShapes.Insert(shape)
 	//} else {
 		space.activeShapes.Insert(shape)
-	//}
+	///}
 
 	return shape
 }

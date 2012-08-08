@@ -373,7 +373,7 @@ func (tree *BBTree)  PairsClear(leaf *Node) {
 	}
 }
 
-func LeafUpdate(leaf *Node , tree *BBTree) bool {
+func LeafUpdate(leaf *Node , tree *BBTree) bool {  
 	root := tree.root;
 	bb := leaf.obj.AABB()
 	

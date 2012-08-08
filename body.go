@@ -84,17 +84,18 @@ type Body struct {
 	
 	IgnoreGravity bool
 }
-
+ 
 func NewBodyStatic() (body *Body) {
 
 	body = &Body{}
 	body.Shapes = make([]*Shape, 0)
 	body.SetMass(Inf) 
 	body.SetMoment(Inf)
+	body.IgnoreGravity = true
 	body.node.IdleTime = Inf
 	body.SetAngle(0)
 
-	return
+	return 
 }
 
 func NewBody(mass, i Float) (body *Body) {
