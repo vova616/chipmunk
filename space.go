@@ -1,8 +1,8 @@
 package chipmunk
 
 import (
-	. "chipmunk/vect"
-	//. "chipmunk/transform"
+	. "github.com/vova616/chipmunk/vect"
+	//. "github.com/vova616/chipmunk/transform"
 	"math"
 	"time"
 	"fmt"

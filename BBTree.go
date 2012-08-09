@@ -3,7 +3,7 @@ package chipmunk
 import (
 	//"container/list"
 	"time"
-	. "chipmunk/vect"
+	. "github.com/vova616/chipmunk/vect"
 	//"fmt"
 )
 

@@ -1,8 +1,8 @@
 package chipmunk
 
 import (
-	"chipmunk/transform"
-	"chipmunk/vect"
+	"github.com/vova616/chipmunk/transform"
+	"github.com/vova616/chipmunk/vect"
 )
 
 type CircleShape struct {

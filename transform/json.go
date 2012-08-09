@@ -2,7 +2,7 @@ package transform
 
 import (
 	"encoding/json" 
-	"chipmunk/vect"
+	"github.com/vova616/chipmunk/vect"
 	"log"
 )
 
