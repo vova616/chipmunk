@@ -32,6 +32,10 @@ func (circle *CircleShape) ShapeType() ShapeType {
 	return ShapeType_Circle
 }
 
+func (circle *CircleShape) Moment(mass float32) vect.Float {
+	return  vect.Float(mass)*(0.5*(circle.Radius*circle.Radius) + vect.LengthSqr(circle.Tc));
+}
+
 // Recalculates the global center of the circle and the the bounding box.
 func (circle *CircleShape) update(xf transform.Transform) AABB {
 	//global center of the circle

@@ -22,7 +22,7 @@ const (
 )
 
 // The maximum number of ContactPoints a single Arbiter can have.
-const MaxPoints = 2 
+const MaxPoints = 4
 
 type Arbiter struct {
 	// The two colliding shapes.

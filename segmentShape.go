@@ -42,6 +42,17 @@ func (segment *SegmentShape) ShapeType() ShapeType {
 	return ShapeType_Segment
 }
 
+func (segment *SegmentShape) Moment(mass float32) vect.Float {
+	
+	
+	offset := vect.Mult(vect.Add(segment.A, segment.B), 0.5);
+	
+	
+	
+	
+	return vect.Float(mass)*(vect.DistSqr(segment.B, segment.A)/12.0 + vect.LengthSqr(offset));
+}
+
 //Called to update N, Tn, Ta, Tb and the the bounding box.
 func (segment *SegmentShape) update(xf transform.Transform) AABB { 
 	a := xf.TransformVect(segment.A)

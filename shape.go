@@ -60,6 +60,8 @@ func (shape *Shape) Velocity() (Vect,bool) {
 	return shape.Body.v,shape.velocityIndexed
 }
 
+
+
 func (shape *Shape) SetFriction(friction Float) {
 	shape.u = friction
 }

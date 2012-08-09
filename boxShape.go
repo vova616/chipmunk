@@ -46,8 +46,8 @@ func NewBox(pos vect.Vect, w, h vect.Float) *Shape {
 	return shape
 }
 
-func BoxMoment(mass, width, height vect.Float) vect.Float {
-	return mass*(width*width + height*height)/12.0
+func (box *BoxShape) Moment(mass float32) vect.Float {
+	return (vect.Float(mass)*(box.Width*box.Width + box.Height*box.Height)/12.0)
 }
 
 // Recalculates the internal Polygon with the Width, Height and Position.

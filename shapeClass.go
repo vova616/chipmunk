@@ -38,6 +38,7 @@ type ShapeClass interface {
 	// Returns if the given point is located inside the shape.
 	TestPoint(point vect.Vect) bool
 
+	Moment(mass float32) vect.Float
 	//marshalShape(shape *Shape) ([]byte, error)
 	//unmarshalShape(shape *Shape, data []byte) error
 }
@@ -77,3 +78,5 @@ func (shape *Shape) GetAsBox() *BoxShape {
 
 	return nil
 }
+
+

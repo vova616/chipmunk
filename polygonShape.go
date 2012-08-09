@@ -47,6 +47,30 @@ func NewPolygon(verts Vertices, offset vect.Vect) *Shape {
 	return shape
 }
 
+func (poly *PolygonShape) Moment(mass float32) vect.Float {
+	
+	sum1 := vect.Float(0)
+ 	sum2 := vect.Float(0)
+
+	println("using bad Moment calculation")
+	offset := vect.Vect{0,0}
+
+	
+	for i:=0; i<poly.NumVerts; i++ {
+		
+		v1 := vect.Add(poly.Verts[i], offset);
+		v2 := vect.Add(poly.Verts[(i+1)%poly.NumVerts], offset);
+		
+		a := vect.Cross(v2, v1);
+		b := vect.Dot(v1, v1) + vect.Dot(v1, v2) + vect.Dot(v2, v2);
+		
+		sum1 += a*b
+		sum2 += a
+	}
+	
+	return (vect.Float(mass)*sum1)/(6.0*sum2);
+}
+
 // Sets the vertices offset by the offset and calculates the PolygonAxes.
 func (poly *PolygonShape) SetVerts(verts Vertices, offset vect.Vect) {
 
