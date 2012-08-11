@@ -166,14 +166,30 @@ func (body *Body) SetPosition(pos Vect) {
 	body.p = pos
 }
 
-func (body *Body) AddForce(force Vect) {
-	body.f.Add(force)
+func (body *Body) AddForce(x,y float32) {
+	body.f.X += Float(x) 
+	body.f.Y += Float(y)
 }
 
-func (body *Body) SetForce(force Vect) {
-	body.f = force
+func (body *Body) SetForce(x,y float32) {
+	body.f.X = Float(x) 
+	body.f.Y = Float(y)
 }
 
+func (body *Body) AddVelocity(x,y float32) {
+	body.v.X += Float(x) 
+	body.v.Y += Float(y)
+}
+
+func (body *Body) SetVelocity(x,y float32) {
+	body.v.X = Float(x) 
+	body.v.Y = Float(y)
+}
+
+
+func (body *Body) Velocity() Vect {
+	return body.v
+}
 
 func (body *Body) Position() Vect{
 	return body.p
@@ -197,6 +213,8 @@ func (body *Body) UpdateVelocity(gravity Vect, damping, dt Float) {
 	body.v = Add(Mult(body.v, damping), Mult(Add(gravity, Mult(body.f, body.m_inv)), dt))
 	
 	body.w = (body.w*damping) + (body.t*body.i_inv*dt)
+	
+	body.f = Vector_Zero
 
 }
 
