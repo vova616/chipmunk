@@ -12,10 +12,13 @@ const (
 	DegreeConst = 180 / math.Pi
 )
 
+type Group int
+type Layer int
+
 type Shape struct{
 	DefaultHash
 	ShapeClass
-	
+	 
 	/// The rigid body this collision shape is attached to.
 	Body *Body;
 
@@ -41,18 +44,18 @@ type Shape struct{
 	/// Collision type of this shape used when picking collision handlers.
 	//collision_type CollisionType
 	/// Group of this shape. Shapes in the same group don't collide.
-	//group Group;
+	Group Group;
 	// Layer bitmask for this shape. Shapes only collide if the bitwise and of their layers is non-zero.
-	//layers Layers;
+	Layer Layer;
 	
 	space *Space
 	
 	
 	velocityIndexed bool
 };
-
+ 
 func newShape() *Shape {
-	return &Shape{velocityIndexed: true, e: 0.5, u: 0.5}
+	return &Shape{velocityIndexed: true, e: 0.5, u: 0.5, Layer: -1}
 	
 }
 

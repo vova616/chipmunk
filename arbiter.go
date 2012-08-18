@@ -44,9 +44,6 @@ type Arbiter struct {
 	/// Override in a pre-solve collision handler for custom behavior.
 	Surface_vr vect.Vect
 
-	// Used to keep a linked list of all arbiters in a space.
-	Next, Prev *Arbiter
-
 	state arbiterState
 	stamp time.Duration
 }
@@ -55,27 +52,7 @@ func newArbiter() *Arbiter {
 	return new(Arbiter)
 }
 
-// Creates an arbiter between the given shapes.
-// If the shapes do not collide, arbiter.NumContact is zero.
-func CreateArbiter(sa, sb *Shape) *Arbiter {
-	arb := newArbiter()
 
-	if sa.ShapeType() > sb.ShapeType() {
-		arb.ShapeA = sb
-		arb.ShapeB = sa
-	} else {
-		arb.ShapeA = sa
-		arb.ShapeB = sb
-	}
-
-	arb.Surface_vr = vect.Vect{}
-
-	arb.nodeA = new(ArbiterEdge)
-	arb.nodeB = new(ArbiterEdge)
-	arb.state =  arbiterStateFirstColl
-
-	return arb
-}
 
 func (arb *Arbiter) destroy() {
 	arb.ShapeA = nil
@@ -167,13 +144,25 @@ func (arb *Arbiter) applyCachedImpulse(dt_coef vect.Float) {
 		apply_impulses(a, b, con.r1, con.r2, vect.Mult(j, dt_coef))
 	}
 } 
-
-func (arb *Arbiter) applyImpulse() {
+/*
+func (arb *Arbiter) applyImpulse3() {
 	a := arb.ShapeA.Body
 	b := arb.ShapeB.Body   
 
 	for i := 0; i < arb.NumContacts; i++ {
 		con := arb.Contacts[i]
+		Impulse(a,b,con,arb.Surface_vr,float32(arb.u))
+	}
+}
+*/
+func (arb *Arbiter) applyImpulse() {
+	a := arb.ShapeA.Body
+	b := arb.ShapeB.Body   
+
+	for i,con := range arb.Contacts {
+		if i >= arb.NumContacts {
+			break
+		}
 		n := con.n
 		r1 := con.r1
 		r2 := con.r2

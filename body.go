@@ -57,6 +57,9 @@ type Body struct {
 	/// Used for fast rotations using cpvrotate().
 	rot Vect
 
+	v_bias Vect
+	w_bias Float
+	
 	/// User definable data pointer.
 	/// Generally this points to your the game object class so you can access it
 	/// when given a cpBody reference in a callback.
@@ -67,8 +70,7 @@ type Body struct {
 	/// Maximum rotational rate (in radians/second) allowed when updating the angular velocity.
 	w_limit Float
 
-	v_bias Vect
-	w_bias Float
+
 
 	space *Space
 	
@@ -94,6 +96,7 @@ func NewBodyStatic() (body *Body) {
 	body.IgnoreGravity = true
 	body.node.IdleTime = Inf
 	body.SetAngle(0)
+	
 
 	return 
 }
@@ -105,6 +108,7 @@ func NewBody(mass, i Float) (body *Body) {
 	body.SetMass(mass) 
 	body.SetMoment(i)
 	body.SetAngle(0)
+	
 	return
 }
 

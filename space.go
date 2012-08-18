@@ -9,6 +9,8 @@ import (
 ) 
 
 const Debug = false
+const ArbiterBufferSize = 1000
+const ContactBufferSize = ArbiterBufferSize*MaxPoints
 
 type Space struct {
 
@@ -58,14 +60,15 @@ type Space struct {
 	AllBodies []*Body
 
 	stamp time.Duration
-
-	contactBuffersHead *ContactBufferHeader
 	
 	staticShapes *SpatialIndex
 	activeShapes *SpatialIndex
 	
 	cachedArbiters map[HashValue]*Arbiter
 	Arbiters []*Arbiter
+	
+	ArbiterBuffer []*Arbiter
+	ContactBuffer []*[MaxPoints]*Contact
 }
 
 type ContactBufferHeader struct {
@@ -73,6 +76,7 @@ type ContactBufferHeader struct {
 	next        *ContactBufferHeader
 	numContacts int
 }
+
 
 type ContactBuffer struct {
 	header   ContactBufferHeader
@@ -98,7 +102,23 @@ func NewSpace() (space *Space) {
 	space.activeShapes = NewBBTree(space.staticShapes)
 	space.cachedArbiters = make(map[HashValue]*Arbiter)
 	space.Arbiters = make([]*Arbiter, 0)
+	space.ArbiterBuffer = make([]*Arbiter, ArbiterBufferSize)
+	
+	for i:=0;i<len(space.ArbiterBuffer);i++ {
+		space.ArbiterBuffer[i] = newArbiter()
+	}
+	
+	space.ContactBuffer = make([]*[MaxPoints]*Contact, ContactBufferSize)
+	
+	for i:=0;i<len(space.ContactBuffer);i++ {
+		var contacts *[MaxPoints]*Contact = new([MaxPoints]*Contact) 
 
+		for i := 0;i<MaxPoints;i++ {
+			contacts[i] = &Contact{}
+		}
+		space.ContactBuffer[i] = contacts
+	}
+	
 	return 
 }
 
@@ -119,7 +139,7 @@ func (space *Space) Step(dt Float) {
 		arb.state = arbiterStateNormal
 	}
 		
-	space.Arbiters = make([]*Arbiter, 0)
+	space.Arbiters = space.Arbiters[0:0]
 
 	prev_dt := space.curr_dt
 	space.curr_dt = dt
@@ -129,6 +149,11 @@ func (space *Space) Step(dt Float) {
 	for h,arb := range space.cachedArbiters {
 		if space.stamp - arb.stamp > time.Duration(space.collisionPersistence) {
 			delete(space.cachedArbiters, h)
+			space.ArbiterBuffer = append(space.ArbiterBuffer, arb)
+			c := arb.Contacts
+			arb.Contacts = nil
+			arb.NumContacts = 0
+			space.ContactBuffer = append(space.ContactBuffer, c)
 		}
 	}
 
@@ -138,7 +163,6 @@ func (space *Space) Step(dt Float) {
 		body.UpdatePosition(dt)
 	}
 
-	space.PushFreshContactBuffer()
 	for _, body := range space.AllBodies {
 		body.UpdateShapes()
 	}
@@ -223,14 +247,42 @@ func (space *Space) Step(dt Float) {
 
 }
 
-func (space *Space) Space() *Space {
+func (space *Space) Space() *Space { 
 	return space
 }
 
+// Creates an arbiter between the given shapes.
+// If the shapes do not collide, arbiter.NumContact is zero.
+func (space *Space) CreateArbiter(sa, sb *Shape) *Arbiter {
+	
+	var arb *Arbiter
+	if len(space.ArbiterBuffer) > 0 {
+		arb, space.ArbiterBuffer = space.ArbiterBuffer[len(space.ArbiterBuffer)-1], space.ArbiterBuffer[:len(space.ArbiterBuffer)-1]
+	} else {
+		for i:=0;i<ArbiterBufferSize/2;i++ {
+			space.ArbiterBuffer = append(space.ArbiterBuffer, newArbiter())
+		} 
+		arb = newArbiter()
+	}
+	//arb = newArbiter()
 
-func (space *Space) NewContactBuffer() *ContactBufferHeader {
-	return &ContactBufferHeader{}
+	if sa.ShapeType() > sb.ShapeType() {
+		arb.ShapeA = sb
+		arb.ShapeB = sa
+	} else {
+		arb.ShapeA = sa
+		arb.ShapeB = sb
+	}
+
+	arb.Surface_vr = Vect{}
+	arb.stamp = 0
+	arb.nodeA = new(ArbiterEdge)
+	arb.nodeB = new(ArbiterEdge)
+	arb.state =  arbiterStateFirstColl
+
+	return arb
 }
+
 
 func  spaceCollideShapes(a, b Indexable, null Data) {
 	SpaceCollideShapes(a.Shape(), b.Shape(), a.Shape().space)
@@ -254,18 +306,29 @@ func SpaceCollideShapes(a, b *Shape, space *Space) {
 	//}
 
 	// Narrow-phase collision detection.
-	var contacts *[MaxPoints]*Contact = new([MaxPoints]*Contact) 
 	
-	for i := 0;i<MaxPoints;i++ {
-		contacts[i] = &Contact{}
+	var contacts *[MaxPoints]*Contact
+	
+	if len(space.ContactBuffer) > 0 {
+		contacts, space.ContactBuffer = space.ContactBuffer[len(space.ContactBuffer)-1], space.ContactBuffer[:len(space.ContactBuffer)-1]
+	} else {
+		for i:=0;i<ContactBufferSize/2;i++ {
+			ccs := new([MaxPoints]*Contact) 
+	
+			for i := 0;i<MaxPoints;i++ {
+				ccs[i] = &Contact{}
+			}
+			space.ContactBuffer = append(space.ContactBuffer, ccs)
+		}
+		contacts, space.ContactBuffer = space.ContactBuffer[len(space.ContactBuffer)-1], space.ContactBuffer[:len(space.ContactBuffer)-1]
 	}
 	
 	numContacts := collide(contacts, a, b);
 	if  numContacts <= 0  {
+		 space.ContactBuffer = append(space.ContactBuffer, contacts)
 		 return; // Shapes are not colliding.
 	}
-	space.contactBuffersHead.numContacts += numContacts
-	
+
 	// Get an arbiter from space->arbiterSet for the two shapes.
 	// This is where the persistant contact magic comes from.
 	
@@ -281,9 +344,18 @@ func SpaceCollideShapes(a, b *Shape, space *Space) {
 	 (arbt.ShapeA == b && arbt.ShapeB == a)) {
 		arb = arbt
 	} else {
-		arb = CreateArbiter(a,b)
+		arb = space.CreateArbiter(a,b)
+	}
+	
+	var oldContacts *[MaxPoints]*Contact
+	
+	if (arb.Contacts != nil) {
+		oldContacts = arb.Contacts
 	}
 	arb.update(contacts, numContacts)
+	if oldContacts != nil {
+		space.ContactBuffer = append(space.ContactBuffer, oldContacts)
+	}
 	
 	space.cachedArbiters[arbHashID] = arb
 	
@@ -327,41 +399,10 @@ func SpaceCollideShapes(a, b *Shape, space *Space) {
 }
 
 func  queryReject(a, b *Shape) bool {
-	return !TestOverlap(a.BB, b.BB) || a.Body == b.Body || (math.IsInf(float64(a.Body.m), 0) && math.IsInf(float64(b.Body.m), 0))
+	//|| (a.Layer & b.Layer) != 0
+	return a.Body == b.Body || (a.Group != 0 && a.Group == b.Group) || (a.Layer & b.Layer) == 0 || (math.IsInf(float64(a.Body.m), 0) && math.IsInf(float64(b.Body.m), 0)) || !TestOverlap(a.BB, b.BB) 
 }
 
-func ContactBufferHeaderInit(header *ContactBufferHeader, stamp time.Duration, splice *ContactBufferHeader) *ContactBufferHeader {
-
-	header.stamp = stamp
-	if splice == nil {
-		header.next = header
-	} else {
-		header.next = splice.next
-	}
-	header.numContacts = 0
-
-	return header
-}
-
-func (space *Space) PushFreshContactBuffer() {
-	stamp := space.stamp
-
-	head := space.contactBuffersHead
-
-	if head == nil {
-		// No buffers have been allocated, make one
-		space.contactBuffersHead = ContactBufferHeaderInit(space.NewContactBuffer(), stamp, nil)
-	} else if int64(stamp-head.next.stamp) > space.collisionPersistence {
-		// The tail buffer is available, rotate the ring
-		tail := head.next
-		space.contactBuffersHead = ContactBufferHeaderInit(tail, stamp, tail)
-	} else {
-		// Allocate a new buffer and push it into the ring
-		buffer := ContactBufferHeaderInit(space.NewContactBuffer(), stamp, head)
-		head.next = buffer
-		space.contactBuffersHead = buffer
-	}
-}
 
 func (space *Space) AddBody(body *Body) *Body {
 	if body.space != nil {
