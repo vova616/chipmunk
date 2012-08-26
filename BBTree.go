@@ -183,12 +183,12 @@ func GetTree(index SpatialIndexClass) *BBTree {
 
 
 
-func (tree *BBTree) GetStamp() time.Duration {
+func (tree *BBTree) GetMasterTree() SpatialIndexClass {
 	dynamicTree := tree.SpatialIndex.dynamicIndex
 	if dynamicTree != nil {
-		return dynamicTree.Stamp()
+		return dynamicTree
 	} 
-	return tree.stamp
+	return tree
 }
 
 func (tree *BBTree) Stamp() time.Duration {
@@ -240,7 +240,7 @@ func (tree *BBTree) Insert(obj Indexable) {
 	root := tree.root;
 	tree.root = tree.SubtreeInsert(root, leaf)
 	
-	leaf.stamp = tree.GetStamp()
+	leaf.stamp = tree.GetMasterTree().Stamp()
 	
 	tree.LeafAddPairs(leaf)
 	tree.IncrementStamp()
@@ -384,7 +384,7 @@ func LeafUpdate(leaf *Node , tree *BBTree) bool {
 		tree.root = tree.SubtreeInsert(root, leaf)
 		
 		tree.PairsClear(leaf);
-		leaf.stamp = tree.GetStamp();
+		leaf.stamp = tree.GetMasterTree().Stamp()
 		
 		return true;
 	}
@@ -481,7 +481,7 @@ func (context *MarkContext) MarkLeafQuery(subtree, leaf *Node, left bool) {
 
 func (context *MarkContext) MarkLeaf(leaf *Node) {
 	tree := context.tree;
-	if leaf.stamp == tree.GetStamp() {
+	if leaf.stamp == tree.GetMasterTree().Stamp() {
 		staticRoot := context.staticRoot;
 		if staticRoot != nil  {
 			context.MarkLeafQuery(staticRoot, leaf, false);

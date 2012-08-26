@@ -29,3 +29,7 @@ func (con *Contact) reset(pos, norm Vect, dist Float, hash HashValue) {
 	con.jtAcc = 0.0
 	con.jBias = 0.0
 }
+
+func (con *Contact) Normal() Vect {
+	return con.n
+}

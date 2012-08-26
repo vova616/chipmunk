@@ -155,9 +155,12 @@ func (arb *Arbiter) applyImpulse3() {
 	}
 }
 */
+
+//Optimized applyImpulse
 func (arb *Arbiter) applyImpulse() {
 	a := arb.ShapeA.Body
 	b := arb.ShapeB.Body   
+	vr := vect.Vect{}
 
 	for i,con := range arb.Contacts {
 		if i >= arb.NumContacts {
@@ -166,29 +169,20 @@ func (arb *Arbiter) applyImpulse() {
 		n := con.n
 		r1 := con.r1
 		r2 := con.r2
-
-	
-		vbn := ((((-r2.Y*b.w_bias)+b.v_bias.X)-((-r1.Y*a.w_bias)+a.v_bias.X))*n.X) + ((((r2.X*b.w_bias)+b.v_bias.Y)-((r1.X*a.w_bias)+a.v_bias.Y))*n.Y)
-
-		// Calculate the relative velocity.
-		vr := vect.Vect{(-r2.Y*b.w+b.v.X)-(-r1.Y*a.w+a.v.X), (r2.X*b.w+b.v.Y)-(r1.X*a.w+a.v.Y)}
-		vrn := (vr.X*n.X) + (vr.Y*n.Y)
 		
-		// Calculate the relative tangent velocity.
-		vrt := ((vr.X+arb.Surface_vr.X)*-n.Y) + ((vr.Y+arb.Surface_vr.Y)*n.X)
+		vr.X = (-r2.Y*b.w+b.v.X)-(-r1.Y*a.w+a.v.X)
+		vr.Y = (r2.X*b.w+b.v.Y)-(r1.X*a.w+a.v.Y)
 
 		// Calculate and clamp the bias impulse.
-		jbn := (con.bias - vbn) * con.nMass
 		jbnOld := con.jBias
-		con.jBias = jbnOld+jbn
+		con.jBias = jbnOld+(con.bias - (((((-r2.Y*b.w_bias)+b.v_bias.X)-((-r1.Y*a.w_bias)+a.v_bias.X))*n.X) + ((((r2.X*b.w_bias)+b.v_bias.Y)-((r1.X*a.w_bias)+a.v_bias.Y))*n.Y))) * con.nMass
 		if 0 > con.jBias {
 			con.jBias = 0
 		}
 		
 		// Calculate and clamp the normal impulse.
-		jn := -(con.bounce + vrn) * con.nMass
 		jnOld := con.jnAcc
-		con.jnAcc = jnOld+jn
+		con.jnAcc = jnOld-(con.bounce + (vr.X*n.X) + (vr.Y*n.Y)) * con.nMass
 		if 0 > con.jnAcc {
 			con.jnAcc = 0
 		}
@@ -196,9 +190,8 @@ func (arb *Arbiter) applyImpulse() {
 
 		// Calculate and clamp the friction impulse.
 		jtMax := arb.u * con.jnAcc
-		jt := -vrt * con.tMass
 		jtOld := con.jtAcc
-		con.jtAcc = jtOld+jt
+		con.jtAcc = jtOld-(((vr.X+arb.Surface_vr.X)*-n.Y) + ((vr.Y+arb.Surface_vr.Y)*n.X)) * con.tMass
 		if con.jtAcc > jtMax {
 			con.jtAcc = jtMax
 		} else if con.jtAcc < -jtMax {
@@ -206,28 +199,33 @@ func (arb *Arbiter) applyImpulse() {
 		}
  
 
-		jj := (con.jBias-jbnOld)
-		j := vect.Vect{n.X*jj, n.Y*jj}
+		jbnOld = (con.jBias-jbnOld)
+		vr.X = n.X*jbnOld
+		vr.Y = n.Y*jbnOld
 		
-		a.v_bias = vect.Vect{(-j.X*a.m_inv)+a.v_bias.X, (-j.Y*a.m_inv)+a.v_bias.Y}
-		a.w_bias += a.i_inv * ((r1.X*-j.Y) - (r1.Y*-j.X))
+		a.v_bias.X = (-vr.X*a.m_inv)+a.v_bias.X
+		a.v_bias.Y = (-vr.Y*a.m_inv)+a.v_bias.Y
+		a.w_bias += a.i_inv * ((r1.X*-vr.Y) - (r1.Y*-vr.X))
 
-		b.v_bias = vect.Vect{(j.X*b.m_inv)+b.v_bias.X, (j.Y*b.m_inv)+b.v_bias.Y}
-		b.w_bias += b.i_inv * ((r2.X*j.Y) - (r2.Y*j.X))
+		b.v_bias.X = (vr.X*b.m_inv)+b.v_bias.X
+		b.v_bias.Y = (vr.Y*b.m_inv)+b.v_bias.Y
+		b.w_bias += b.i_inv * ((r2.X*vr.Y) - (r2.Y*vr.X))
 
 
-		jc := vect.Vect{con.jnAcc - jnOld, con.jtAcc - jtOld}
+		jnOld = con.jnAcc - jnOld
+		jtOld = con.jtAcc - jtOld
 
-		j = vect.Vect{		
-		X: (n.X*jc.X) - (n.Y*jc.Y),
-		Y: (n.X*jc.Y) + (n.Y*jc.X),
-		}
+		vr.X = (n.X*jnOld) - (n.Y*jtOld)
+		vr.Y = (n.X*jtOld) + (n.Y*jnOld)		
 		 
-		a.v = vect.Vect{(-j.X*a.m_inv)+a.v.X, (-j.Y*a.m_inv)+a.v.Y}
-		a.w += a.i_inv * ((r1.X*-j.Y) - (r1.Y*-j.X))
+		a.v.X = (-vr.X*a.m_inv)+a.v.X
+		a.v.Y = (-vr.Y*a.m_inv)+a.v.Y
+		a.w += a.i_inv * ((r1.X*-vr.Y) - (r1.Y*-vr.X))
 		
-		b.v = vect.Vect{(j.X*b.m_inv)+b.v.X, (j.Y*b.m_inv)+b.v.Y}
-		b.w += b.i_inv * ((r2.X*j.Y) - (r2.Y*j.X))
+		b.v.X = (vr.X*b.m_inv)+b.v.X
+		b.v.Y = (vr.Y*b.m_inv)+b.v.Y
+
+		b.w += b.i_inv * ((r2.X*vr.Y) - (r2.Y*vr.X))
 	}
 }
 
