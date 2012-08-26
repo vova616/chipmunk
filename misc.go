@@ -5,6 +5,7 @@ import (
 	"log"
 )
 
+
 func k_scalar_body(body *Body, r, n vect.Vect) vect.Float {
 	rcn := vect.Cross(r, n)
 	return body.m_inv + (body.i_inv*rcn*rcn)
@@ -18,6 +19,20 @@ func k_scalar(a, b *Body, r1, r2, n vect.Vect) vect.Float {
 	return value
 }
 
+
+func k_scalar2(a, b *Body, r1, r2, n vect.Vect) vect.Float {
+	rcn := (r1.X*n.Y) - (r1.Y*n.X)
+	rcn = a.m_inv + (a.i_inv*rcn*rcn)
+	
+	rcn2 := (r2.X*n.Y) - (r2.Y*n.X)
+	rcn2 = b.m_inv + (b.i_inv*rcn2*rcn2)
+	
+	value := rcn + rcn2
+	if value == 0.0 {
+		log.Printf("Warning: Unsolvable collision or constraint.")
+	}
+	return value 
+}
 
 func relative_velocity2(a, b *Body, r1, r2 vect.Vect) vect.Vect {
 	v1 := vect.Add(b.v, vect.Mult(vect.Perp(r2), b.w))

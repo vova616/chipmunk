@@ -4,7 +4,7 @@ package chipmunk
 
 
 /*
-#cgo CFLAGS: -pipe -Wall -O3
+#cgo CFLAGS: -O3 -Wall
 
 typedef struct  {
 	float X,Y; 
@@ -60,6 +60,7 @@ typedef struct {
 	
 }Body;
 
+inline
 void Impulse(Body *a, Body *b, Contact* con, vect2 *surf, float u) {
 		vect2 r1 = con->r1;
 		vect2 r2 = con->r2;

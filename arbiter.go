@@ -1,9 +1,10 @@
 package chipmunk
 
 import (
-	//"fmt"
+	"fmt"
 	"github.com/vova616/chipmunk/transform"
 	"github.com/vova616/chipmunk/vect"
+	
 	"time"
 )
 
@@ -104,6 +105,63 @@ func (arb *Arbiter) preStep(inv_dt, slop, bias vect.Float) {
 	a := arb.ShapeA.Body
 	b := arb.ShapeB.Body
 
+	for i,con := range arb.Contacts {
+		if i >= arb.NumContacts {
+			break
+		}
+
+		// Calculate the offsets.
+		con.r1 = vect.Sub(con.p, a.p)
+		con.r2 = vect.Sub(con.p, b.p)
+ 
+		//con.Normal = vect.Vect{-1,0}
+		
+
+		// Calculate the mass normal and mass tangent.
+		n := con.n
+		rcn := (con.r1.X*n.Y) - (con.r1.Y*n.X)
+		rcn = a.m_inv + (a.i_inv*rcn*rcn)
+		
+		rcn2 := (con.r2.X*n.Y) - (con.r2.Y*n.X)
+		rcn2 = b.m_inv + (b.i_inv*rcn2*rcn2)
+		
+		value := rcn + rcn2
+		if value == 0.0 {
+			fmt.Printf("Warning: Unsolvable collision or constraint.")
+		}
+		con.nMass = 1.0 / value
+		
+		n = vect.Perp(con.n)
+		rcn = (con.r1.X*n.Y) - (con.r1.Y*n.X)
+		rcn = a.m_inv + (a.i_inv*rcn*rcn)
+		
+		rcn2 = (con.r2.X*n.Y) - (con.r2.Y*n.X)
+		rcn2 = b.m_inv + (b.i_inv*rcn2*rcn2)
+		
+		value = rcn + rcn2
+		if value == 0.0 {
+			fmt.Printf("Warning: Unsolvable collision or constraint.")
+		}
+		con.tMass = 1.0 / value
+
+		// Calculate the target bias velocity.
+		ds := con.dist+slop
+		if 0 > ds {
+			con.bias = -bias * inv_dt * con.dist+slop
+		} else {
+			con.bias = 0;
+		}
+		con.jBias = 0.0
+		con.bounce = vect.Dot(vect.Vect{(-con.r2.Y*b.w+b.v.X)-(-con.r1.Y*a.w+a.v.X), (con.r2.X*b.w+b.v.Y)-(con.r1.X*a.w+a.v.Y)}, con.n) * arb.e
+
+	}
+}
+
+func (arb *Arbiter) preStep2(inv_dt, slop, bias vect.Float) {
+
+	a := arb.ShapeA.Body
+	b := arb.ShapeB.Body
+
 	for i := 0; i < arb.NumContacts; i++ {
 		con := arb.Contacts[i]
 
@@ -127,10 +185,10 @@ func (arb *Arbiter) preStep(inv_dt, slop, bias vect.Float) {
 		
 		// Calculate the target bounce velocity.
 		con.bounce = normal_relative_velocity(a, b, con.r1, con.r2, con.n) * arb.e
-		//con.bounce = 0
 	}
 }
 
+//Optimized applyCachedImpulse
 func (arb *Arbiter) applyCachedImpulse(dt_coef vect.Float) {
 	if arb.state == arbiterStateFirstColl && arb.NumContacts > 0 {
 		return
@@ -138,14 +196,45 @@ func (arb *Arbiter) applyCachedImpulse(dt_coef vect.Float) {
 	//println("asd")
 	a := arb.ShapeA.Body
 	b := arb.ShapeB.Body
-	for i := 0; i < arb.NumContacts; i++ {
-		con := arb.Contacts[i]
+	var j vect.Vect
+	
+	for i,con := range arb.Contacts {
+		if i >= arb.NumContacts {
+			break
+		}
+	
+		j.X = ((con.n.X*con.jnAcc) - (con.n.Y*con.jtAcc)) * dt_coef
+		j.Y = ((con.n.X*con.jtAcc) + (con.n.Y*con.jnAcc)) * dt_coef
+		
+		a.v.X = (-j.X*a.m_inv)+a.v.X
+		a.v.Y = (-j.Y*a.m_inv)+a.v.Y
+		a.w += a.i_inv * ((con.r1.X*-j.Y) - (con.r1.Y*-j.X))
+		
+		b.v.X = (j.X*b.m_inv)+b.v.X
+		b.v.Y = (j.Y*b.m_inv)+b.v.Y
+	
+		b.w += b.i_inv * ((con.r2.X*j.Y) - (con.r2.Y*j.X))
+	}
+} 
+
+func (arb *Arbiter) applyCachedImpulse2(dt_coef vect.Float) {
+	if arb.state == arbiterStateFirstColl && arb.NumContacts > 0 {
+		return
+	}
+	//println("asd")
+	a := arb.ShapeA.Body
+	b := arb.ShapeB.Body
+	for i,con := range arb.Contacts {
+		if i >= arb.NumContacts {
+			break
+		}
 		j := transform.RotateVect(con.n, transform.Rotation{con.jnAcc, con.jtAcc})
 		apply_impulses(a, b, con.r1, con.r2, vect.Mult(j, dt_coef))
 	}
 } 
+ 
 /*
-func (arb *Arbiter) applyImpulse3() {
+func (arb *Arbiter) applyImpulse() {
 	a := arb.ShapeA.Body
 	b := arb.ShapeB.Body   
 
