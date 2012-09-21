@@ -5,9 +5,9 @@ import (
 	"log"
 	"math"
 	//"fmt"
-) 
+)
 
-type collisionHandler func(contacts *[MaxPoints]*Contact, sA, sB *Shape) int
+type collisionHandler func(contacts []*Contact, sA, sB *Shape) int
 
 var collisionHandlers = [numShapes][numShapes]collisionHandler{
 	ShapeType_Circle: [numShapes]collisionHandler{
@@ -36,7 +36,8 @@ var collisionHandlers = [numShapes][numShapes]collisionHandler{
 	},
 }
 
-func collide(contacts *[MaxPoints]*Contact, sA, sB *Shape) int {
+func collide(contacts []*Contact, sA, sB *Shape) int {
+	contacts = contacts[:MaxPoints]
 	stA := sA.ShapeType()
 	stB := sB.ShapeType()
 
@@ -55,7 +56,7 @@ func collide(contacts *[MaxPoints]*Contact, sA, sB *Shape) int {
 }
 
 //START COLLISION HANDLERS
-func circle2circle(contacts *[MaxPoints]*Contact, sA, sB *Shape) int {
+func circle2circle(contacts []*Contact, sA, sB *Shape) int {
 	csA, ok := sA.ShapeClass.(*CircleShape)
 	if !ok {
 		log.Printf("Error: ShapeA not a CircleShape!")
@@ -69,7 +70,7 @@ func circle2circle(contacts *[MaxPoints]*Contact, sA, sB *Shape) int {
 	return circle2circleQuery(csA.Tc, csB.Tc, csA.Radius, csB.Radius, contacts[0])
 }
 
-func circle2segment(contacts *[MaxPoints]*Contact, sA, sB *Shape) int {
+func circle2segment(contacts []*Contact, sA, sB *Shape) int {
 	circle, ok := sA.ShapeClass.(*CircleShape)
 	if !ok {
 		log.Printf("Error: ShapeA not a CircleShape!")
@@ -84,7 +85,7 @@ func circle2segment(contacts *[MaxPoints]*Contact, sA, sB *Shape) int {
 	return circle2segmentFunc(contacts, circle, segment)
 }
 
-func circle2polygon(contacts *[MaxPoints]*Contact, sA, sB *Shape) int {
+func circle2polygon(contacts []*Contact, sA, sB *Shape) int {
 	circle, ok := sA.ShapeClass.(*CircleShape)
 	if !ok {
 		log.Printf("Error: ShapeA not a CircleShape!")
@@ -99,7 +100,7 @@ func circle2polygon(contacts *[MaxPoints]*Contact, sA, sB *Shape) int {
 	return circle2polyFunc(contacts, circle, poly)
 }
 
-func segment2polygon(contacts *[MaxPoints]*Contact, sA, sB *Shape) int {
+func segment2polygon(contacts []*Contact, sA, sB *Shape) int {
 	segment, ok := sA.ShapeClass.(*SegmentShape)
 	if !ok {
 		log.Printf("Error: ShapeA not a SegmentShape!")
@@ -113,7 +114,7 @@ func segment2polygon(contacts *[MaxPoints]*Contact, sA, sB *Shape) int {
 	return seg2polyFunc(contacts, segment, poly)
 }
 
-func polygon2polygon(contacts *[MaxPoints]*Contact, sA, sB *Shape) int {
+func polygon2polygon(contacts []*Contact, sA, sB *Shape) int {
 	poly1, ok := sA.ShapeClass.(*PolygonShape)
 	if !ok {
 		log.Printf("Error: ShapeA not a PolygonShape!")
@@ -128,7 +129,7 @@ func polygon2polygon(contacts *[MaxPoints]*Contact, sA, sB *Shape) int {
 	return poly2polyFunc(contacts, poly1, poly2)
 }
 
-func circle2box(contacts *[MaxPoints]*Contact, sA, sB *Shape) int {
+func circle2box(contacts []*Contact, sA, sB *Shape) int {
 	circle, ok := sA.ShapeClass.(*CircleShape)
 	if !ok {
 		log.Printf("Error: ShapeA not a CircleShape!")
@@ -143,7 +144,7 @@ func circle2box(contacts *[MaxPoints]*Contact, sA, sB *Shape) int {
 	return circle2polyFunc(contacts, circle, box.Polygon)
 }
 
-func segment2box(contacts *[MaxPoints]*Contact, sA, sB *Shape) int {
+func segment2box(contacts []*Contact, sA, sB *Shape) int {
 	seg, ok := sA.ShapeClass.(*SegmentShape)
 	if !ok {
 		log.Printf("Error: ShapeA not a SegmentShape!")
@@ -158,7 +159,7 @@ func segment2box(contacts *[MaxPoints]*Contact, sA, sB *Shape) int {
 	return seg2polyFunc(contacts, seg, box.Polygon)
 }
 
-func polygon2box(contacts *[MaxPoints]*Contact, sA, sB *Shape) int {
+func polygon2box(contacts []*Contact, sA, sB *Shape) int {
 	poly, ok := sA.ShapeClass.(*PolygonShape)
 	if !ok {
 		log.Printf("Error: ShapeA not a PolygonShape!")
@@ -173,7 +174,7 @@ func polygon2box(contacts *[MaxPoints]*Contact, sA, sB *Shape) int {
 	return poly2polyFunc(contacts, poly, box.Polygon)
 }
 
-func box2box(contacts *[MaxPoints]*Contact, sA, sB *Shape) int {
+func box2box(contacts []*Contact, sA, sB *Shape) int {
 	box1, ok := sA.ShapeClass.(*BoxShape)
 	if !ok {
 		log.Printf("Error: ShapeA not a BoxShape!")
@@ -207,7 +208,6 @@ func circle2circleQuery(p1, p2 vect.Vect, r1, r2 vect.Float, con *Contact) int {
 		pDist = vect.Float(math.Inf(1))
 	}
 
-
 	pos := vect.Add(p1, vect.Mult(delta, 0.5+(r1-0.5*minDist)/pDist))
 
 	norm := vect.Vect{1, 0}
@@ -231,7 +231,7 @@ func segmentEncapQuery(p1, p2 vect.Vect, r1, r2 vect.Float, con *Contact, tangen
 	panic("Never reached")
 }
 
-func circle2segmentFunc(contacts *[MaxPoints]*Contact, circle *CircleShape, segment *SegmentShape) int {
+func circle2segmentFunc(contacts []*Contact, circle *CircleShape, segment *SegmentShape) int {
 	rsum := circle.Radius + segment.Radius
 
 	//Calculate normal distance from segment
@@ -274,7 +274,7 @@ func circle2segmentFunc(contacts *[MaxPoints]*Contact, circle *CircleShape, segm
 	panic("Never reached")
 }
 
-func circle2polyFunc(contacts *[MaxPoints]*Contact, circle *CircleShape, poly *PolygonShape) int {
+func circle2polyFunc(contacts []*Contact, circle *CircleShape, poly *PolygonShape) int {
 
 	axes := poly.TAxes
 
@@ -313,7 +313,7 @@ func circle2polyFunc(contacts *[MaxPoints]*Contact, circle *CircleShape, poly *P
 	panic("Never reached")
 }
 
-func poly2polyFunc(contacts *[MaxPoints]*Contact, poly1, poly2 *PolygonShape) int {
+func poly2polyFunc(contacts []*Contact, poly1, poly2 *PolygonShape) int {
 	min1, mini1 := findMSA(poly2, poly1.TAxes, poly1.NumVerts)
 	if mini1 == -1 {
 		return 0
@@ -365,7 +365,7 @@ func (poly *PolygonShape) valueOnAxis(n vect.Vect, d vect.Float) vect.Float {
 	return min - d
 }
 
-func nextContact(contacts *[MaxPoints]*Contact, numPtr *int) *Contact {
+func nextContact(contacts []*Contact, numPtr *int) *Contact {
 	index := *numPtr
 
 	if index < MaxPoints {
@@ -377,13 +377,12 @@ func nextContact(contacts *[MaxPoints]*Contact, numPtr *int) *Contact {
 	panic("Never reached")
 }
 
-
-func findVerts(contacts *[MaxPoints]*Contact, poly1, poly2 *PolygonShape, n vect.Vect, dist vect.Float) int {
+func findVerts(contacts []*Contact, poly1, poly2 *PolygonShape, n vect.Vect, dist vect.Float) int {
 	num := 0
 
 	for i, v := range poly1.TVerts {
 		if poly2.ContainsVert(v) {
-			c := nextContact(contacts, &num) 
+			c := nextContact(contacts, &num)
 			c.reset(v, n, dist, hashPair(poly1.Shape.hash, HashValue(i)))
 		}
 	}
@@ -403,7 +402,7 @@ func findVerts(contacts *[MaxPoints]*Contact, poly1, poly2 *PolygonShape, n vect
 	panic("Never reached")
 }
 
-func findVertsFallback(contacts *[MaxPoints]*Contact, poly1, poly2 *PolygonShape, n vect.Vect, dist vect.Float) int {
+func findVertsFallback(contacts []*Contact, poly1, poly2 *PolygonShape, n vect.Vect, dist vect.Float) int {
 	num := 0
 
 	for i, v := range poly1.TVerts {
@@ -428,7 +427,7 @@ func segValueOnAxis(seg *SegmentShape, n vect.Vect, d vect.Float) vect.Float {
 	return vect.FMin(a, b) - d
 }
 
-func findPoinsBehindSeg(contacts *[MaxPoints]*Contact, num *int, seg *SegmentShape, poly *PolygonShape, pDist, coef vect.Float) {
+func findPoinsBehindSeg(contacts []*Contact, num *int, seg *SegmentShape, poly *PolygonShape, pDist, coef vect.Float) {
 	dta := vect.Cross(seg.Tn, seg.Ta)
 	dtb := vect.Cross(seg.Tn, seg.Tb)
 	n := vect.Mult(seg.Tn, coef)
@@ -444,8 +443,7 @@ func findPoinsBehindSeg(contacts *[MaxPoints]*Contact, num *int, seg *SegmentSha
 	}
 }
 
-
-func seg2polyFunc(contacts *[MaxPoints]*Contact, seg *SegmentShape, poly *PolygonShape) int {
+func seg2polyFunc(contacts []*Contact, seg *SegmentShape, poly *PolygonShape) int {
 	axes := poly.TAxes
 
 	segD := vect.Dot(seg.Tn, seg.Ta)

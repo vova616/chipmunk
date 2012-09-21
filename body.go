@@ -12,12 +12,11 @@ type ComponentNode struct {
 	IdleTime Float
 }
 
-type BodyType uint8 
+type BodyType uint8
 
 const (
-	BodyType_Static = BodyType(0)
+	BodyType_Static  = BodyType(0)
 	BodyType_Dynamic = BodyType(1)
-	
 )
 
 var Inf = Float(math.Inf(1))
@@ -42,7 +41,7 @@ type Body struct {
 	v Vect
 	/// Force acting on the rigid body's center of gravity.
 	f Vect
-	
+
 	//Transform Transform
 
 	/// Rotation of the body around it's center of gravity in radians.
@@ -59,7 +58,7 @@ type Body struct {
 
 	v_bias Vect
 	w_bias Float
-	
+
 	/// User definable data pointer.
 	/// Generally this points to your the game object class so you can access it
 	/// when given a cpBody reference in a callback.
@@ -70,45 +69,42 @@ type Body struct {
 	/// Maximum rotational rate (in radians/second) allowed when updating the angular velocity.
 	w_limit Float
 
-
-
 	space *Space
-	
+
 	Shapes []*Shape
 
 	node ComponentNode
-	
+
 	hash HashValue
-	
+
 	arbiter *Arbiter
-	
+
 	idleTime Float
-	
+
 	IgnoreGravity bool
 }
- 
+
 func NewBodyStatic() (body *Body) {
 
 	body = &Body{}
 	body.Shapes = make([]*Shape, 0)
-	body.SetMass(Inf) 
+	body.SetMass(Inf)
 	body.SetMoment(Inf)
 	body.IgnoreGravity = true
 	body.node.IdleTime = Inf
 	body.SetAngle(0)
-	
 
-	return 
+	return
 }
 
 func NewBody(mass, i Float) (body *Body) {
 
 	body = &Body{}
 	body.Shapes = make([]*Shape, 0)
-	body.SetMass(mass) 
+	body.SetMass(mass)
 	body.SetMoment(i)
 	body.SetAngle(0)
-	
+
 	return
 }
 
@@ -152,13 +148,12 @@ func (body *Body) BodyActivate() {
 		return
 	}
 	body.node.IdleTime = 0
- 
+
 }
 
 func (body *Body) IsStatic() bool {
 	return math.IsInf(float64(body.node.IdleTime), 0)
 }
-
 
 func (body *Body) UpdateShapes() {
 	for _, shape := range body.Shapes {
@@ -170,32 +165,31 @@ func (body *Body) SetPosition(pos Vect) {
 	body.p = pos
 }
 
-func (body *Body) AddForce(x,y float32) {
-	body.f.X += Float(x) 
+func (body *Body) AddForce(x, y float32) {
+	body.f.X += Float(x)
 	body.f.Y += Float(y)
 }
 
-func (body *Body) SetForce(x,y float32) {
-	body.f.X = Float(x) 
+func (body *Body) SetForce(x, y float32) {
+	body.f.X = Float(x)
 	body.f.Y = Float(y)
 }
 
-func (body *Body) AddVelocity(x,y float32) {
-	body.v.X += Float(x) 
+func (body *Body) AddVelocity(x, y float32) {
+	body.v.X += Float(x)
 	body.v.Y += Float(y)
 }
 
-func (body *Body) SetVelocity(x,y float32) {
-	body.v.X = Float(x) 
+func (body *Body) SetVelocity(x, y float32) {
+	body.v.X = Float(x)
 	body.v.Y = Float(y)
 }
-
 
 func (body *Body) Velocity() Vect {
 	return body.v
 }
 
-func (body *Body) Position() Vect{
+func (body *Body) Position() Vect {
 	return body.p
 }
 
@@ -213,13 +207,11 @@ func (body *Body) UpdatePosition(dt Float) {
 }
 
 func (body *Body) UpdateVelocity(gravity Vect, damping, dt Float) {
-	
+
 	body.v = Add(Mult(body.v, damping), Mult(Add(gravity, Mult(body.f, body.m_inv)), dt))
-	
-	body.w = (body.w*damping) + (body.t*body.i_inv*dt)
-	
+
+	body.w = (body.w * damping) + (body.t * body.i_inv * dt)
+
 	body.f = Vector_Zero
 
 }
-
-

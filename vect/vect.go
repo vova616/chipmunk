@@ -1,38 +1,37 @@
 package vect
 
 import (
-	"math"  
+	"math"
 )
 
 type Float float32
 
 var (
-	Vector_Zero = Vect{0,0}
-
+	Vector_Zero = Vect{0, 0}
 )
 
-func FMin (a,b Float) Float {
+func FMin(a, b Float) Float {
 	if a > b {
 		return b
 	}
-	return a 
+	return a
 }
 
 func FAbs(a Float) Float {
-	if (a < 0) {
+	if a < 0 {
 		return -a
 	}
 	return a
 }
 
-func FMax (a,b Float) Float {
+func FMax(a, b Float) Float {
 	if a > b {
 		return a
 	}
-	return b 
+	return b
 }
 
-func FClamp (val,min,max Float) Float {
+func FClamp(val, min, max Float) Float {
 	if val < min {
 		return min
 	} else if val > max {
@@ -43,7 +42,7 @@ func FClamp (val,min,max Float) Float {
 
 //basic 2d vector.
 type Vect struct {
-	X, Y Float 
+	X, Y Float
 }
 
 //adds v2 to the given vector.
@@ -173,24 +172,24 @@ func Normalize(v Vect) Vect {
 
 //dot product between two vectors.
 func Dot(v1, v2 Vect) Float {
-	return (v1.X*v2.X) + (v1.Y*v2.Y)
+	return (v1.X * v2.X) + (v1.Y * v2.Y)
 }
 
 //same as CrossVV.
 func Cross(a, b Vect) Float {
-	return (a.X*b.Y) - (a.Y*b.X)
+	return (a.X * b.Y) - (a.Y * b.X)
 }
 
 func Clamp(v Vect, l Float) Vect {
-	if Dot(v,v) > l*l {
+	if Dot(v, v) > l*l {
 		return Mult(Normalize(v), l)
-	} 
+	}
 	return v
 }
 
 //cross product of two vectors.
 func CrossVV(a, b Vect) Float {
-	return (a.X*b.Y) - (a.Y*b.X)
+	return (a.X * b.Y) - (a.Y * b.X)
 }
 
 //cross product between a vector and a float64.
@@ -219,6 +218,6 @@ func Perp(v Vect) Vect {
 	return Vect{-v.Y, v.X}
 }
 
-func FromAngle(angle Float) Vect { 
+func FromAngle(angle Float) Vect {
 	return Vect{Float(math.Cos(float64(angle))), Float(math.Sin(float64(angle)))}
 }
