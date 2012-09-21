@@ -113,6 +113,18 @@ func (body *Body) AddShape(shape *Shape) {
 	shape.Body = body
 }
 
+func (body *Body) Clone() *Body {
+	clone := *body
+	clone.Shapes = make([]*Shape, 0)
+	for _, shape := range body.Shapes {
+		clone.AddShape(shape.Clone())
+	}
+	clone.arbiter = nil
+	clone.space = nil
+	clone.hash = 0
+	return &clone
+}
+
 func (body *Body) SetMass(mass Float) {
 	if mass <= 0 {
 		panic("Mass must be positive and non-zero.")

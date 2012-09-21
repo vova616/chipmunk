@@ -39,6 +39,8 @@ type ShapeClass interface {
 	TestPoint(point vect.Vect) bool
 
 	Moment(mass float32) vect.Float
+
+	Clone(s *Shape) ShapeClass
 	//marshalShape(shape *Shape) ([]byte, error)
 	//unmarshalShape(shape *Shape, data []byte) error
 }
@@ -56,7 +58,7 @@ func (shape *Shape) GetAsCircle() *CircleShape {
 func (shape *Shape) GetAsPolygon() *PolygonShape {
 	if poly, ok := shape.ShapeClass.(*PolygonShape); ok {
 		return poly
-	} 
+	}
 
 	return nil
 }
@@ -78,5 +80,3 @@ func (shape *Shape) GetAsBox() *BoxShape {
 
 	return nil
 }
-
-

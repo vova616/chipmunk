@@ -3,7 +3,7 @@ package chipmunk
 import (
 	"github.com/vova616/chipmunk/transform"
 	"github.com/vova616/chipmunk/vect"
-	
+
 	"log"
 	//"fmt"
 	"math"
@@ -48,27 +48,26 @@ func NewPolygon(verts Vertices, offset vect.Vect) *Shape {
 }
 
 func (poly *PolygonShape) Moment(mass float32) vect.Float {
-	
+
 	sum1 := vect.Float(0)
- 	sum2 := vect.Float(0)
+	sum2 := vect.Float(0)
 
 	println("using bad Moment calculation")
-	offset := vect.Vect{0,0}
+	offset := vect.Vect{0, 0}
 
-	
-	for i:=0; i<poly.NumVerts; i++ {
-		
-		v1 := vect.Add(poly.Verts[i], offset);
-		v2 := vect.Add(poly.Verts[(i+1)%poly.NumVerts], offset);
-		
-		a := vect.Cross(v2, v1);
-		b := vect.Dot(v1, v1) + vect.Dot(v1, v2) + vect.Dot(v2, v2);
-		
-		sum1 += a*b
+	for i := 0; i < poly.NumVerts; i++ {
+
+		v1 := vect.Add(poly.Verts[i], offset)
+		v2 := vect.Add(poly.Verts[(i+1)%poly.NumVerts], offset)
+
+		a := vect.Cross(v2, v1)
+		b := vect.Dot(v1, v1) + vect.Dot(v1, v2) + vect.Dot(v2, v2)
+
+		sum1 += a * b
 		sum2 += a
 	}
-	
-	return (vect.Float(mass)*sum1)/(6.0*sum2);
+
+	return (vect.Float(mass) * sum1) / (6.0 * sum2)
 }
 
 // Sets the vertices offset by the offset and calculates the PolygonAxes.
@@ -82,8 +81,6 @@ func (poly *PolygonShape) SetVerts(verts Vertices, offset vect.Vect) {
 	if verts.ValidatePolygon() == false {
 		log.Printf("Warning: vertices not valid")
 	}
-	
-
 
 	numVerts := len(verts)
 	oldnumVerts := len(poly.Verts)
@@ -120,6 +117,27 @@ func (poly *PolygonShape) ShapeType() ShapeType {
 	return ShapeType_Polygon
 }
 
+func (poly *PolygonShape) Clone(s *Shape) ShapeClass {
+	return poly.Clone2(s)
+}
+
+func (poly *PolygonShape) Clone2(s *Shape) *PolygonShape {
+	clone := *poly
+	clone.Verts = make(Vertices, clone.NumVerts)
+	clone.TVerts = make(Vertices, clone.NumVerts)
+	clone.Axes = make([]PolygonAxis, clone.NumVerts)
+	clone.TAxes = make([]PolygonAxis, clone.NumVerts)
+
+	clone.Verts = append(clone.Verts, poly.Verts...)
+	clone.TVerts = append(clone.TVerts, poly.TVerts...)
+	clone.Axes = append(clone.Axes, poly.Axes...)
+	clone.TAxes = append(clone.TAxes, poly.TAxes...)
+
+	clone.Shape = s
+
+	return &clone
+}
+
 // Calculates the transformed vertices and axes and the bounding box.
 func (poly *PolygonShape) update(xf transform.Transform) AABB {
 	//transform axes
@@ -133,13 +151,13 @@ func (poly *PolygonShape) update(xf transform.Transform) AABB {
 			dst[i].D = vect.Dot(xf.Position, n) + src[i].D
 		}
 		/*
-		fmt.Println("")
-		fmt.Println("Started Axes")
-		fmt.Println(xf.Rotation, xf.Position)
-		for i:=0;i<poly.NumVerts;i++ {
-			fmt.Println(src[i], dst[i])
-		}
-*/
+			fmt.Println("")
+			fmt.Println("Started Axes")
+			fmt.Println(xf.Rotation, xf.Position)
+			for i:=0;i<poly.NumVerts;i++ {
+				fmt.Println(src[i], dst[i])
+			}
+		*/
 	}
 	//transform verts
 	{
@@ -161,13 +179,13 @@ func (poly *PolygonShape) update(xf transform.Transform) AABB {
 			aabb.Lower.Y = vect.FMin(aabb.Lower.Y, v.Y)
 			aabb.Upper.Y = vect.FMax(aabb.Upper.Y, v.Y)
 		}
-		
-/*
-		fmt.Println("Verts")
-		for i:=0;i<poly.NumVerts;i++ {
-			fmt.Println(src[i], dst[i])
-		}
-*/
+
+		/*
+			fmt.Println("Verts")
+			for i:=0;i<poly.NumVerts;i++ {
+				fmt.Println(src[i], dst[i])
+			}
+		*/
 		return aabb
 	}
 }

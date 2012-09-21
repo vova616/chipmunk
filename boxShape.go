@@ -28,7 +28,7 @@ func NewBox(pos vect.Vect, w, h vect.Float) *Shape {
 		Height:   h,
 		Position: pos,
 		Shape:    shape,
-	} 
+	}
 
 	hw := w / 2.0
 	hh := h / 2.0
@@ -38,7 +38,7 @@ func NewBox(pos vect.Vect, w, h vect.Float) *Shape {
 		{hw, hh},
 		{hw, -hh},
 	}
- 
+
 	poly := box.Polygon
 	poly.SetVerts(box.verts[:], box.Position)
 
@@ -47,7 +47,7 @@ func NewBox(pos vect.Vect, w, h vect.Float) *Shape {
 }
 
 func (box *BoxShape) Moment(mass float32) vect.Float {
-	return (vect.Float(mass)*(box.Width*box.Width + box.Height*box.Height)/12.0)
+	return (vect.Float(mass) * (box.Width*box.Width + box.Height*box.Height) / 12.0)
 }
 
 // Recalculates the internal Polygon with the Width, Height and Position.
@@ -69,7 +69,15 @@ func (box *BoxShape) UpdatePoly() {
 func (box *BoxShape) ShapeType() ShapeType {
 	return ShapeType_Box
 }
- 
+
+// Returns ShapeType_Box. Needed to implemet the ShapeClass interface.
+func (box *BoxShape) Clone(s *Shape) ShapeClass {
+	clone := *box
+	clone.Polygon = box.Polygon.Clone2(s)
+	clone.Shape = s
+	return &clone
+}
+
 // Recalculates the transformed vertices, axes and the bounding box.
 func (box *BoxShape) update(xf transform.Transform) AABB {
 	return box.Polygon.update(xf)

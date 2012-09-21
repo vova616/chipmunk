@@ -78,6 +78,16 @@ func (shape *Shape) AABB() AABB {
 	return shape.BB
 }
 
+func (shape *Shape) Clone() *Shape {
+	clone := *shape
+	cc := &clone
+	cc.space = nil
+	cc.DefaultHash.hash = 0
+	cc.Body = nil
+	cc.ShapeClass = cc.ShapeClass.Clone(cc)
+	return cc
+}
+
 func (shape *Shape) Update() {
 	//fmt.Println("Rot", shape.Body.rot)
 	shape.BB = shape.ShapeClass.update(transform.NewTransform(shape.Body.p, shape.Body.a))

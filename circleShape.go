@@ -33,7 +33,7 @@ func (circle *CircleShape) ShapeType() ShapeType {
 }
 
 func (circle *CircleShape) Moment(mass float32) vect.Float {
-	return  vect.Float(mass)*(0.5*(circle.Radius*circle.Radius) + vect.LengthSqr(circle.Tc));
+	return vect.Float(mass) * (0.5*(circle.Radius*circle.Radius) + vect.LengthSqr(circle.Tc))
 }
 
 // Recalculates the global center of the circle and the the bounding box.
@@ -47,6 +47,13 @@ func (circle *CircleShape) update(xf transform.Transform) AABB {
 		vect.Sub(center, rv),
 		vect.Add(center, rv),
 	}
+}
+
+// Returns ShapeType_Box. Needed to implemet the ShapeClass interface.
+func (circle *CircleShape) Clone(s *Shape) ShapeClass {
+	clone := *circle
+	clone.Shape = s
+	return &clone
 }
 
 // Returns true if the given point is located inside the circle.

@@ -160,6 +160,10 @@ func (space *Space) Step(dt Float) {
 
 	for _, body := range space.AllBodies {
 		body.UpdateShapes()
+		//d := body.Shapes[0].GetAsBox()
+		//if d != nil {
+		//	fmt.Println(d.verts, body.Shapes[0].AABB(), body.Angle(), body.Position())
+		//}
 	}
 
 	start := time.Now()
@@ -168,6 +172,9 @@ func (space *Space) Step(dt Float) {
 	if Debug {
 		fmt.Println("spaceCollideShapes time", end.Sub(start))
 	}
+
+	//axc := space.activeShapes.SpatialIndexClass.(*BBTree)
+	//PrintTree(axc.root)
 
 	for _, arb := range space.Arbiters {
 
@@ -233,6 +240,17 @@ func (space *Space) Step(dt Float) {
 		fmt.Println("stepTime", stepEnd.Sub(stepStart))
 	}
 
+}
+
+func PrintTree(node *Node) {
+	if node != nil {
+		fmt.Println("Parent:")
+		fmt.Println(node.bb)
+		fmt.Println("A:")
+		PrintTree(node.A)
+		fmt.Println("B:")
+		PrintTree(node.B)
+	}
 }
 
 func (space *Space) Space() *Space {

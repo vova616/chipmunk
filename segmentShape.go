@@ -43,18 +43,14 @@ func (segment *SegmentShape) ShapeType() ShapeType {
 }
 
 func (segment *SegmentShape) Moment(mass float32) vect.Float {
-	
-	
-	offset := vect.Mult(vect.Add(segment.A, segment.B), 0.5);
-	
-	
-	
-	
-	return vect.Float(mass)*(vect.DistSqr(segment.B, segment.A)/12.0 + vect.LengthSqr(offset));
+
+	offset := vect.Mult(vect.Add(segment.A, segment.B), 0.5)
+
+	return vect.Float(mass) * (vect.DistSqr(segment.B, segment.A)/12.0 + vect.LengthSqr(offset))
 }
 
 //Called to update N, Tn, Ta, Tb and the the bounding box.
-func (segment *SegmentShape) update(xf transform.Transform) AABB { 
+func (segment *SegmentShape) update(xf transform.Transform) AABB {
 	a := xf.TransformVect(segment.A)
 	b := xf.TransformVect(segment.B)
 	segment.Ta = a
@@ -74,6 +70,12 @@ func (segment *SegmentShape) update(xf transform.Transform) AABB {
 		min,
 		max,
 	}
+}
+
+func (segment *SegmentShape) Clone(s *Shape) ShapeClass {
+	clone := *segment
+	clone.Shape = s
+	return &clone
 }
 
 // Only returns false for now.
