@@ -8,7 +8,6 @@ import (
 	"time"
 )
 
-const Debug = false
 const ArbiterBufferSize = 1000
 const ContactBufferSize = ArbiterBufferSize * MaxPoints
 
@@ -69,6 +68,10 @@ type Space struct {
 
 	ArbiterBuffer []*Arbiter
 	ContactBuffer [][]*Contact
+
+	ApplyImpulsesTime time.Duration
+	ReindexQueryTime  time.Duration
+	StepTime          time.Duration
 }
 
 type ContactBufferHeader struct {
@@ -162,9 +165,8 @@ func (space *Space) Step(dt Float) {
 	start := time.Now()
 	space.activeShapes.ReindexQuery(spaceCollideShapes, space)
 	end := time.Now()
-	if Debug {
-		fmt.Println("spaceCollideShapes time", end.Sub(start))
-	}
+
+	space.ReindexQueryTime = end.Sub(start)
 
 	//axc := space.activeShapes.SpatialIndexClass.(*BBTree)
 	//PrintTree(axc.root)
@@ -184,19 +186,12 @@ func (space *Space) Step(dt Float) {
 			delete(space.cachedArbiters, h)
 			space.ArbiterBuffer = append(space.ArbiterBuffer, arb)
 			c := arb.Contacts
-			arb.Contacts = nil
-			arb.NumContacts = 0
-			space.ContactBuffer = append(space.ContactBuffer, c)
+			if c != nil {
+				arb.Contacts = nil
+				arb.NumContacts = 0
+				space.ContactBuffer = append(space.ContactBuffer, c)
+			}
 		}
-	}
-
-	for _, arb := range space.Arbiters {
-
-		a := arb.ShapeA.Body
-		b := arb.ShapeB.Body
-
-		a.arbiter = arb
-		b.arbiter = arb
 	}
 
 	slop := space.collisionSlop
@@ -229,9 +224,6 @@ func (space *Space) Step(dt Float) {
 
 	for i := 0; i < space.Iterations; i++ {
 		for _, arb := range space.Arbiters {
-			if arb.ShapeA.IsSensor || arb.ShapeB.IsSensor {
-				continue
-			}
 			arb.applyImpulse()
 		}
 	}
@@ -240,14 +232,20 @@ func (space *Space) Step(dt Float) {
 	//for i:=0; i<8; i++ {
 	//	<-done
 	//}
-
 	end = time.Now()
-	stepEnd := time.Now()
-	if Debug {
-		fmt.Println("applyImpulse time", end.Sub(start), "space.Arbiters", len(space.Arbiters))
-		fmt.Println("stepTime", stepEnd.Sub(stepStart))
+	space.ApplyImpulsesTime = end.Sub(start)
+
+	for _, arb := range space.Arbiters {
+		if arb.ShapeA.Body.CallbackHandler != nil {
+			arb.ShapeA.Body.CallbackHandler.CollisionPostSolve(arb)
+		}
+		if arb.ShapeB.Body.CallbackHandler != nil {
+			arb.ShapeB.Body.CallbackHandler.CollisionPostSolve(arb)
+		}
 	}
 
+	stepEnd := time.Now()
+	space.StepTime = stepEnd.Sub(stepStart)
 }
 
 var done = make(chan bool, 8)
@@ -339,7 +337,7 @@ func SpaceCollideShapes(a, b *Shape, space *Space) {
 
 	//cpCollisionHandler *handler = cpSpaceLookupHandler(space, a->collision_type, b->collision_type);
 
-	//sensor := a.IsSensor || b.IsSensor;
+	sensor := a.IsSensor || b.IsSensor
 	//if(sensor && handler == &cpDefaultCollisionHandler) return;
 	//if sensor {
 	//	return
@@ -399,8 +397,6 @@ func SpaceCollideShapes(a, b *Shape, space *Space) {
 
 	space.cachedArbiters[arbHashID] = arb
 
-	space.Arbiters = append(space.Arbiters, arb)
-
 	//cpArbiter *arb = (cpArbiter *)cpHashSetInsert(space->cachedArbiters, arbHashID, shape_pair, space, (cpHashSetTransFunc)cpSpaceArbiterSetTrans);
 	//cpArbiterUpdate(arb, contacts, numContacts, handler, a, b);
 
@@ -418,31 +414,40 @@ func SpaceCollideShapes(a, b *Shape, space *Space) {
 			arb.Ignore() // permanently ignore the collision until separation 
 		}
 	}
-	/*
-		if(
-			// Ignore the arbiter if it has been flagged
-			(arb->state != cpArbiterStateIgnore) && 
-			// Call preSolve
-			handler->preSolve(arb, space, handler->data) &&
-			// Process, but don't add collisions for sensors.
-			!sensor
-		){
 
-			cpArrayPush(space->arbiters, arb);
-		} else {
-			cpSpacePopContacts(space, numContacts);
+	preSolveResult := false
 
-			arb->contacts = NULL;
-			arb->numContacts = 0;
-
-			// Normally arbiters are set as used after calling the post-solve callback.
-			// However, post-solve callbacks are not called for sensors or arbiters rejected from pre-solve.
-			if(arb->state != cpArbiterStateIgnore) arb->state = cpArbiterStateNormal;
+	// Ignore the arbiter if it has been flagged
+	if arb.state != arbiterStateIgnore {
+		// Call preSolve
+		if arb.ShapeA.Body.CallbackHandler != nil {
+			preSolveResult = arb.ShapeA.Body.CallbackHandler.CollisionPreSolve(arb)
 		}
+		if arb.ShapeB.Body.CallbackHandler != nil {
+			preSolveResult = preSolveResult || arb.ShapeB.Body.CallbackHandler.CollisionPreSolve(arb)
+		}
+	}
 
-		// Time stamp the arbiter so we know it was used recently.
+	if preSolveResult &&
+		// Process, but don't add collisions for sensors.
+		!sensor {
+		space.Arbiters = append(space.Arbiters, arb)
+	} else {
+		//cpSpacePopContacts(space, numContacts);
 
-	*/
+		space.ContactBuffer = append(space.ContactBuffer, arb.Contacts)
+		arb.Contacts = nil
+		arb.NumContacts = 0
+
+		// Normally arbiters are set as used after calling the post-solve callback.
+		// However, post-solve callbacks are not called for sensors or arbiters rejected from pre-solve.
+		if arb.state != arbiterStateIgnore {
+			arb.state = arbiterStateNormal
+		}
+	}
+
+	// Time stamp the arbiter so we know it was used recently.
+
 	arb.stamp = space.stamp
 }
 

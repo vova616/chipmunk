@@ -85,8 +85,6 @@ type Body struct {
 
 	hash HashValue
 
-	arbiter *Arbiter
-
 	idleTime Float
 
 	IgnoreGravity bool
@@ -127,7 +125,6 @@ func (body *Body) Clone() *Body {
 	for _, shape := range body.Shapes {
 		clone.AddShape(shape.Clone())
 	}
-	clone.arbiter = nil
 	clone.space = nil
 	clone.hash = 0
 	return &clone
