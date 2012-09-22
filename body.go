@@ -130,6 +130,18 @@ func (body *Body) Clone() *Body {
 	return &clone
 }
 
+func (body *Body) KineticEnergy() Float {
+	vsq := Dot(body.v, body.v)
+	wsq := body.w * body.w
+	if vsq != 0 {
+		vsq = vsq * body.m
+	}
+	if wsq != 0 {
+		wsq = wsq * body.i
+	}
+	return vsq + wsq
+}
+
 func (body *Body) SetMass(mass Float) {
 	if mass <= 0 {
 		panic("Mass must be positive and non-zero.")
@@ -161,11 +173,48 @@ func (body *Body) setAngle(angle Float) {
 }
 
 func (body *Body) BodyActivate() {
-	if body.IsStatic() {
+	if !body.IsRogue() {
+		body.node.IdleTime = 0
+
+	}
+}
+
+func (body *Body) ComponentRoot() *Body {
+	if body != nil {
+		return body.node.Root
+	}
+	return nil
+}
+
+func (body *Body) ComponentActive() {
+	if body.IsSleeping() || body.IsRogue() {
 		return
 	}
-	body.node.IdleTime = 0
+	return
+	/*
+		space := body.space
+		b := body
+		for b != nil {
+			next := b.node.Next
 
+			b.node.IdleTime = 0
+			b.node.Root = nil
+			b.node.Next = nil
+			//cpSpaceActivateBody(space, b);
+
+			b = next
+		}
+	*/
+	//for i,sleeping
+	//cpArrayDeleteObj(space->sleepingComponents, root);
+}
+
+func (body *Body) IsRogue() bool {
+	return body.space == nil
+}
+
+func (body *Body) IsSleeping() bool {
+	return body.node.Root != nil
 }
 
 func (body *Body) IsStatic() bool {

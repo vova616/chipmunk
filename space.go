@@ -55,8 +55,8 @@ type Space struct {
 
 	curr_dt Float
 
-	Bodies    []*Body
-	AllBodies []*Body
+	Bodies             []*Body
+	sleepingComponents []*Body
 
 	stamp time.Duration
 
@@ -99,6 +99,7 @@ func NewSpace() (space *Space) {
 	space.collisionPersistence = 3
 
 	space.Bodies = make([]*Body, 0)
+	space.sleepingComponents = make([]*Body, 0)
 
 	space.staticShapes = NewBBTree(nil)
 	space.activeShapes = NewBBTree(space.staticShapes)
@@ -154,7 +155,7 @@ func (space *Space) Step(dt Float) {
 		body.UpdatePosition(dt)
 	}
 
-	for _, body := range space.AllBodies {
+	for _, body := range bodies {
 		body.UpdateShapes()
 		//d := body.Shapes[0].GetAsBox()
 		//if d != nil {
@@ -290,6 +291,96 @@ func (space *Space) Space() *Space {
 	return space
 }
 
+func (space *Space) ProcessComponents(dt Float) {
+
+	sleep := math.IsInf(float64(space.sleepTimeThreshold), 0)
+	bodies := space.Bodies
+	_ = bodies
+	if sleep {
+		dv := space.idleSpeedThreshold
+		dvsq := Float(0)
+		if dv == 0 {
+			dvsq = dv * dv
+		} else {
+			dvsq = space.Gravity.LengthSqr() * dt * dt
+		}
+
+		for _, body := range space.Bodies {
+			keThreshold := Float(0)
+			if dvsq != 0 {
+				keThreshold = body.m * dvsq
+			}
+			body.node.IdleTime = 0
+			if body.KineticEnergy() <= keThreshold {
+				body.node.IdleTime += dt
+			}
+		}
+	}
+
+	for _, arb := range space.Arbiters {
+		a, b := arb.BodyA, arb.BodyB
+		_, _ = a, b
+		if sleep {
+
+		}
+	}
+	/*
+		// Awaken any sleeping bodies found and then push arbiters to the bodies' lists.
+		cpArray *arbiters = space->arbiters;
+		for(int i=0, count=arbiters->num; i<count; i++){
+			cpArbiter *arb = (cpArbiter*)arbiters->arr[i];
+			cpBody *a = arb->body_a, *b = arb->body_b;
+
+			if(sleep){
+				if((cpBodyIsRogue(b) && !cpBodyIsStatic(b)) || cpBodyIsSleeping(a)) cpBodyActivate(a);
+				if((cpBodyIsRogue(a) && !cpBodyIsStatic(a)) || cpBodyIsSleeping(b)) cpBodyActivate(b);
+			}
+
+			cpBodyPushArbiter(a, arb);
+			cpBodyPushArbiter(b, arb);
+		}
+
+		if(sleep){
+			// Bodies should be held active if connected by a joint to a non-static rouge body.
+			cpArray *constraints = space->constraints;
+			for(int i=0; i<constraints->num; i++){
+				cpConstraint *constraint = (cpConstraint *)constraints->arr[i];
+				cpBody *a = constraint->a, *b = constraint->b;
+
+				if(cpBodyIsRogue(b) && !cpBodyIsStatic(b)) cpBodyActivate(a);
+				if(cpBodyIsRogue(a) && !cpBodyIsStatic(a)) cpBodyActivate(b);
+			}
+
+			// Generate components and deactivate sleeping ones
+			for(int i=0; i<bodies->num;){
+				cpBody *body = (cpBody*)bodies->arr[i];
+
+				if(ComponentRoot(body) == NULL){
+					// Body not in a component yet. Perform a DFS to flood fill mark 
+					// the component in the contact graph using this body as the root.
+					FloodFillComponent(body, body);
+
+					// Check if the component should be put to sleep.
+					if(!ComponentActive(body, space->sleepTimeThreshold)){
+						cpArrayPush(space->sleepingComponents, body);
+						CP_BODY_FOREACH_COMPONENT(body, other) cpSpaceDeactivateBody(space, other);
+
+						// cpSpaceDeactivateBody() removed the current body from the list.
+						// Skip incrementing the index counter.
+						continue;
+					}
+				}
+
+				i++;
+
+				// Only sleeping bodies retain their component node pointers.
+				body->node.root = NULL;
+				body->node.next = NULL;
+			}
+		}
+	*/
+}
+
 // Creates an arbiter between the given shapes.
 // If the shapes do not collide, arbiter.NumContact is zero.
 func (space *Space) CreateArbiter(sa, sb *Shape) *Arbiter {
@@ -312,6 +403,9 @@ func (space *Space) CreateArbiter(sa, sb *Shape) *Arbiter {
 		arb.ShapeA = sa
 		arb.ShapeB = sb
 	}
+
+	arb.BodyA = arb.ShapeA.Body
+	arb.BodyB = arb.ShapeB.Body
 
 	arb.Surface_vr = Vect{}
 	arb.stamp = 0
@@ -466,7 +560,6 @@ func (space *Space) AddBody(body *Body) *Body {
 	if !body.IsStatic() {
 		space.Bodies = append(space.Bodies, body)
 	}
-	space.AllBodies = append(space.AllBodies, body)
 
 	for _, shape := range body.Shapes {
 		if shape.space == nil {
@@ -484,12 +577,12 @@ func (space *Space) AddShape(shape *Shape) *Shape {
 	}
 
 	shape.space = space
-	//shape.Update()
-	//if shape.Body.IsStatic() {
-	//	space.staticShapes.Insert(shape)
-	//} else {
-	space.activeShapes.Insert(shape)
-	///}
+	shape.Update()
+	if shape.Body.IsStatic() {
+		space.staticShapes.Insert(shape)
+	} else {
+		space.activeShapes.Insert(shape)
+	}
 
 	return shape
 }

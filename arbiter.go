@@ -30,6 +30,7 @@ const MaxPoints = 4
 type Arbiter struct {
 	// The two colliding shapes.
 	ShapeA, ShapeB *Shape
+	BodyA, BodyB   *Body
 	// The contact points between the shapes.
 	Contacts []*Contact
 	// The number of contact points.
