@@ -117,7 +117,11 @@ func NewSpace() (space *Space) {
 		}
 		space.ContactBuffer[i] = contacts
 	}
-
+	/*
+		for i := 0; i < 8; i++ {
+			go space.MultiThreadTest()
+		}
+	*/
 	return
 }
 
@@ -143,17 +147,6 @@ func (space *Space) Step(dt Float) {
 
 	space.stamp++
 
-	for h, arb := range space.cachedArbiters {
-		if space.stamp-arb.stamp > time.Duration(space.collisionPersistence) {
-			delete(space.cachedArbiters, h)
-			space.ArbiterBuffer = append(space.ArbiterBuffer, arb)
-			c := arb.Contacts
-			arb.Contacts = nil
-			arb.NumContacts = 0
-			space.ContactBuffer = append(space.ContactBuffer, c)
-		}
-	}
-
 	for _, body := range bodies {
 		body.UpdatePosition(dt)
 	}
@@ -175,6 +168,27 @@ func (space *Space) Step(dt Float) {
 
 	//axc := space.activeShapes.SpatialIndexClass.(*BBTree)
 	//PrintTree(axc.root)
+
+	for h, arb := range space.cachedArbiters {
+		ticks := space.stamp - arb.stamp
+		if ticks >= 1 && arb.state != arbiterStateCached {
+			arb.state = arbiterStateCached
+			if arb.ShapeA.Body.CallbackHandler != nil {
+				arb.ShapeA.Body.CallbackHandler.CollisionExit(arb)
+			}
+			if arb.ShapeB.Body.CallbackHandler != nil {
+				arb.ShapeB.Body.CallbackHandler.CollisionExit(arb)
+			}
+		}
+		if ticks > time.Duration(space.collisionPersistence) {
+			delete(space.cachedArbiters, h)
+			space.ArbiterBuffer = append(space.ArbiterBuffer, arb)
+			c := arb.Contacts
+			arb.Contacts = nil
+			arb.NumContacts = 0
+			space.ContactBuffer = append(space.ContactBuffer, c)
+		}
+	}
 
 	for _, arb := range space.Arbiters {
 
@@ -213,10 +227,6 @@ func (space *Space) Step(dt Float) {
 	//fmt.Println("STEP")
 	start = time.Now()
 
-	//done := make(chan bool, 8)
-
-	//for j:=0;j<8;j++ {
-	//go func() {
 	for i := 0; i < space.Iterations; i++ {
 		for _, arb := range space.Arbiters {
 			if arb.ShapeA.IsSensor || arb.ShapeB.IsSensor {
@@ -225,10 +235,8 @@ func (space *Space) Step(dt Float) {
 			arb.applyImpulse()
 		}
 	}
-	//	done <- true
-	//	}()
-	//}
 
+	//MultiThreadGo()
 	//for i:=0; i<8; i++ {
 	//	<-done
 	//}
@@ -240,6 +248,33 @@ func (space *Space) Step(dt Float) {
 		fmt.Println("stepTime", stepEnd.Sub(stepStart))
 	}
 
+}
+
+var done = make(chan bool, 8)
+var start = make(chan bool, 8)
+
+func (space *Space) MultiThreadTest() {
+	for {
+		<-start
+		for i := 0; i < space.Iterations/8; i++ {
+			for _, arb := range space.Arbiters {
+				if arb.ShapeA.IsSensor || arb.ShapeB.IsSensor {
+					continue
+				}
+				arb.applyImpulse()
+			}
+		}
+		done <- true
+	}
+}
+
+func MultiThreadGo() {
+	for i := 0; i < 8; i++ {
+		start <- true
+	}
+	for i := 0; i < 8; i++ {
+		<-done
+	}
 }
 
 func PrintTree(node *Node) {
@@ -370,9 +405,19 @@ func SpaceCollideShapes(a, b *Shape, space *Space) {
 	//cpArbiterUpdate(arb, contacts, numContacts, handler, a, b);
 
 	// Call the begin function first if it's the first step
-	//if(arb->state == cpArbiterStateFirstColl && !handler->begin(arb, space, handler->data)){
-	//	cpArbiterIgnore(arb); // permanently ignore the collision until separation
-	//}
+	if arb.state == arbiterStateFirstColl {
+		// && (!b.Body.CallbackHandler.CollisionEnter(arb) || !a.Body.CallbackHandler.CollisionEnter(arb)
+		ignore := false
+		if b.Body.CallbackHandler != nil {
+			ignore = !b.Body.CallbackHandler.CollisionEnter(arb)
+		}
+		if a.Body.CallbackHandler != nil {
+			ignore = ignore || !a.Body.CallbackHandler.CollisionEnter(arb)
+		}
+		if ignore {
+			arb.Ignore() // permanently ignore the collision until separation 
+		}
+	}
 	/*
 		if(
 			// Ignore the arbiter if it has been flagged

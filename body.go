@@ -21,6 +21,13 @@ const (
 
 var Inf = Float(math.Inf(1))
 
+type CollisionCallback interface {
+	CollisionEnter(arbiter *Arbiter) bool
+	CollisionPreSolve(arbiter *Arbiter) bool
+	CollisionPostSolve(arbiter *Arbiter)
+	CollisionExit(arbiter *Arbiter)
+}
+
 type Body struct {
 	/// Mass of the body.
 	/// Must agree with cpBody.m_inv! Use cpBodySetMass() when changing the mass for this reason.
@@ -62,7 +69,8 @@ type Body struct {
 	/// User definable data pointer.
 	/// Generally this points to your the game object class so you can access it
 	/// when given a cpBody reference in a callback.
-	UserData interface{}
+	UserData        interface{}
+	CallbackHandler CollisionCallback
 
 	/// Maximum velocity allowed when updating the velocity.
 	v_limit Float

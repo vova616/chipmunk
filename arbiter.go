@@ -20,6 +20,8 @@ type arbiterState int
 const (
 	arbiterStateFirstColl = iota
 	arbiterStateNormal
+	arbiterStateIgnore
+	arbiterStateCached
 )
 
 // The maximum number of ContactPoints a single Arbiter can have.
@@ -91,6 +93,10 @@ func (arb *Arbiter) update(contacts []*Contact, numContacts int) {
 	arb.e = sa.e * sb.e
 
 	arb.Surface_vr = vect.Sub(sa.Surface_v, sb.Surface_v)
+}
+
+func (arb *Arbiter) Ignore() {
+	arb.state = arbiterStateIgnore
 }
 
 func (arb *Arbiter) preStep(inv_dt, slop, bias vect.Float) {
