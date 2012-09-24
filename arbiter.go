@@ -107,17 +107,18 @@ func (arb *Arbiter) preStep(inv_dt, slop, bias vect.Float) {
 
 	for _, con := range arb.Contacts {
 		// Calculate the offsets.
-		con.r1 = vect.Sub(con.p, a.p)
-		con.r2 = vect.Sub(con.p, b.p)
+		x, y := con.p.X, con.p.Y
+		r1 := vect.Vect{x - a.p.X, y - a.p.Y}
+		r2 := vect.Vect{x - b.p.X, y - b.p.Y}
 
 		//con.Normal = vect.Vect{-1,0}
 
 		// Calculate the mass normal and mass tangent.
 		n := con.n
-		rcn := (con.r1.X * n.Y) - (con.r1.Y * n.X)
+		rcn := (r1.X * n.Y) - (r1.Y * n.X)
 		rcn = a.m_inv + (a.i_inv * rcn * rcn)
 
-		rcn2 := (con.r2.X * n.Y) - (con.r2.Y * n.X)
+		rcn2 := (r2.X * n.Y) - (r2.Y * n.X)
 		rcn2 = b.m_inv + (b.i_inv * rcn2 * rcn2)
 
 		value := rcn + rcn2
@@ -127,10 +128,10 @@ func (arb *Arbiter) preStep(inv_dt, slop, bias vect.Float) {
 		con.nMass = 1.0 / value
 
 		n = vect.Perp(con.n)
-		rcn = (con.r1.X * n.Y) - (con.r1.Y * n.X)
+		rcn = (r1.X * n.Y) - (r1.Y * n.X)
 		rcn = a.m_inv + (a.i_inv * rcn * rcn)
 
-		rcn2 = (con.r2.X * n.Y) - (con.r2.Y * n.X)
+		rcn2 = (r2.X * n.Y) - (r2.Y * n.X)
 		rcn2 = b.m_inv + (b.i_inv * rcn2 * rcn2)
 
 		value = rcn + rcn2
@@ -147,8 +148,9 @@ func (arb *Arbiter) preStep(inv_dt, slop, bias vect.Float) {
 			con.bias = 0
 		}
 		con.jBias = 0.0
-		con.bounce = vect.Dot(vect.Vect{(-con.r2.Y*b.w + b.v.X) - (-con.r1.Y*a.w + a.v.X), (con.r2.X*b.w + b.v.Y) - (con.r1.X*a.w + a.v.Y)}, con.n) * arb.e
-
+		con.bounce = vect.Dot(vect.Vect{(-r2.Y*b.w + b.v.X) - (-r1.Y*a.w + a.v.X), (r2.X*b.w + b.v.Y) - (r1.X*a.w + a.v.Y)}, con.n) * arb.e
+		con.r1 = r1
+		con.r2 = r2
 	}
 }
 
@@ -221,13 +223,11 @@ func (arb *Arbiter) applyCachedImpulse2(dt_coef vect.Float) {
 }
 
 /*
-func (arb *Arbiter) applyImpulse2() {
+func (arb *Arbiter) applyImpulse() {
 	a := arb.ShapeA.Body
 	b := arb.ShapeB.Body
 
-	for i := 0; i < arb.NumContacts; i++ {
-
-		con := arb.Contacts[i]
+	for _, con := range arb.Contacts {
 		Impulse(a, b, con, arb.Surface_vr, float32(arb.u))
 	}
 }

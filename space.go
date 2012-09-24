@@ -174,16 +174,23 @@ func (space *Space) Step(dt Float) {
 
 	for h, arb := range space.cachedArbiters {
 		ticks := space.stamp - arb.stamp
-		if ticks >= 1 && arb.state != arbiterStateCached {
+		deleted := (arb.BodyA.deleted || arb.BodyB.deleted)
+		if (ticks >= 1 && arb.state != arbiterStateCached) || deleted {
 			arb.state = arbiterStateCached
-			if arb.ShapeA.Body.CallbackHandler != nil {
-				arb.ShapeA.Body.CallbackHandler.CollisionExit(arb)
+			if arb.BodyA.CallbackHandler != nil {
+				arb.BodyA.CallbackHandler.CollisionExit(arb)
+				if arb.BodyA.deleted {
+					arb.BodyA.CallbackHandler = nil
+				}
 			}
-			if arb.ShapeB.Body.CallbackHandler != nil {
-				arb.ShapeB.Body.CallbackHandler.CollisionExit(arb)
+			if arb.BodyB.CallbackHandler != nil {
+				arb.BodyB.CallbackHandler.CollisionExit(arb)
+				if arb.BodyB.deleted {
+					arb.BodyB.CallbackHandler = nil
+				}
 			}
 		}
-		if ticks > time.Duration(space.collisionPersistence) {
+		if ticks > time.Duration(space.collisionPersistence) || deleted {
 			delete(space.cachedArbiters, h)
 			space.ArbiterBuffer = append(space.ArbiterBuffer, arb)
 			c := arb.Contacts
@@ -379,6 +386,34 @@ func (space *Space) ProcessComponents(dt Float) {
 			}
 		}
 	*/
+}
+
+func (space *Space) RemoveBody(body *Body) {
+	if body == nil {
+		return
+	}
+	body.BodyActivate()
+	for i, pbody := range space.Bodies {
+		if pbody == body {
+			space.Bodies = append(space.Bodies[:i], space.Bodies[i+1:]...)
+			break
+		}
+	}
+	for _, shape := range body.Shapes {
+		space.removeShape(shape)
+	}
+	body.space = nil
+	body.Shapes = nil
+	body.UserData = nil
+	body.deleted = true
+}
+
+func (space *Space) removeShape(shape *Shape) {
+	shape.space = nil
+	shape.Body = nil
+	shape.UserData = nil
+	shape.ShapeClass = nil
+	space.activeShapes.Remove(shape)
 }
 
 // Creates an arbiter between the given shapes.

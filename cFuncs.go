@@ -1,7 +1,8 @@
 package chipmunk
 
 /*
-#cgo CFLAGS: -O3 -Wall
+#cgo CFLAGS: -O3 -std=gnu99 -ffast-math
+#cgo LDFLAGS: -O3 -std=gnu99 -ffast-math
 
 typedef struct  {
 	float X,Y; 
@@ -58,7 +59,7 @@ typedef struct {
 }Body;
 
 inline
-void Impulse(Body *a, Body *b, Contact* con, vect2 *surf, float u) {
+void Impulse(Body *a, Body *b, Contact* con, float surfx, float surfy, float u) {
 		vect2 r1 = con->r1;
 		vect2 r2 = con->r2;
 		vect2 n = con->n;	
@@ -68,7 +69,7 @@ void Impulse(Body *a, Body *b, Contact* con, vect2 *surf, float u) {
 		vect2 vr = {(-r2.Y*b->w+b->v.X)-(-r1.Y*a->w+a->v.X), (r2.X*b->w+b->v.Y)-(r1.X*a->w+a->v.Y)};
 		float vrn = (vr.X*n.X) + (vr.Y*n.Y);	
 
-		float vrt = ((vr.X+surf->X)*-n.Y) + ((vr.Y+surf->Y)*n.X);
+		float vrt = ((vr.X+surfx)*-n.Y) + ((vr.Y+surfy)*n.X);
 
 		float jbn = (con->bias - vbn) * con->nMass;
 		float jbnOld = con->jBias;
@@ -125,6 +126,7 @@ void Impulse(Body *a, Body *b, Contact* con, vect2 *surf, float u) {
 
 
 */
+/*
 import "C"
 import (
 	. "github.com/vova616/chipmunk/vect"
@@ -136,6 +138,8 @@ func Impulse(a, b *Body, con *Contact, surf Vect, u float32) {
 		(*C.Body)(unsafe.Pointer(a)),
 		(*C.Body)(unsafe.Pointer(b)),
 		(*C.Contact)(unsafe.Pointer(con)),
-		(*C.vect2)(unsafe.Pointer(&surf)),
+		C.float(surf.X), C.float(surf.Y),
 		(C.float)(u))
+
 }
+*/

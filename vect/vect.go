@@ -124,11 +124,16 @@ func Length(v Vect) Float {
 	return Dist(v, Vect{})
 }
 
-//returns a new vector with its x/y values set to the smaller one from the two input values.
-//e.g. Min({2, 10}, {8, 3}) would return {2, 3}
+/*
 func Min(v1, v2 Vect) Vect {
-	out := Vect{}
+	return INLI_Min(v1, v2)
+}
 
+func Max(v1, v2 Vect) Vect {
+	return INLI_Max(v1, v2)
+}
+*/
+func Min(v1, v2 Vect) (out Vect) {
 	if v1.X < v2.X {
 		out.X = v1.X
 	} else {
@@ -140,15 +145,12 @@ func Min(v1, v2 Vect) Vect {
 	} else {
 		out.Y = v2.Y
 	}
-
-	return out
+	return
 }
 
 //returns a new vector with its x/y values set to the bigger one from the two input values.
 //e.g. Min({2, 10}, {8, 3}) would return {2, 3}
-func Max(v1, v2 Vect) Vect {
-	out := Vect{}
-
+func Max(v1, v2 Vect) (out Vect) {
 	if v1.X > v2.X {
 		out.X = v1.X
 	} else {
@@ -160,8 +162,7 @@ func Max(v1, v2 Vect) Vect {
 	} else {
 		out.Y = v2.Y
 	}
-
-	return out
+	return
 }
 
 //returns the normalized input vector.

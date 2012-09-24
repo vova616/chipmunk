@@ -85,6 +85,8 @@ type Body struct {
 
 	hash HashValue
 
+	deleted bool
+
 	idleTime Float
 
 	IgnoreGravity bool
@@ -162,9 +164,25 @@ func (body *Body) SetMoment(moment Float) {
 	body.i_inv = 1 / moment
 }
 
+func (body *Body) Moment() float32 {
+	return float32(body.i)
+}
+
+func (body *Body) MomentIsInf() bool {
+	return math.IsInf(float64(body.i), 0)
+}
+
 func (body *Body) SetAngle(angle Float) {
 	body.BodyActivate()
 	body.setAngle(angle)
+}
+
+func (body *Body) AddAngle(angle float32) {
+	body.SetAngle(Float(angle) + body.Angle())
+}
+
+func (body *Body) Mass() Float {
+	return body.m
 }
 
 func (body *Body) setAngle(angle Float) {
@@ -251,6 +269,22 @@ func (body *Body) SetVelocity(x, y float32) {
 	body.v.Y = Float(y)
 }
 
+func (body *Body) AddTorque(t float32) {
+	body.t += Float(t)
+}
+
+func (body *Body) SetTorque(t float32) {
+	body.t = Float(t)
+}
+
+func (body *Body) AddAngularVelocity(w float32) {
+	body.w += Float(w)
+}
+
+func (body *Body) SetAngularVelocity(w float32) {
+	body.w = Float(w)
+}
+
 func (body *Body) Velocity() Vect {
 	return body.v
 }
@@ -261,6 +295,10 @@ func (body *Body) Position() Vect {
 
 func (body *Body) Angle() Float {
 	return body.a
+}
+
+func (body *Body) Rot() (rx, ry float32) {
+	return float32(body.rot.X), float32(body.rot.Y)
 }
 
 func (body *Body) UpdatePosition(dt Float) {

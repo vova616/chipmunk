@@ -1,6 +1,6 @@
 package chipmunk
 
-import ( 
+import (
 	"github.com/vova616/chipmunk/vect"
 )
 
@@ -11,18 +11,18 @@ type AABB struct {
 }
 
 /*
-		l := aabb.Lower.X
-		b := aabb.Lower.Y
-		r := aabb.Upper.X
-		t := aabb.Upper.Y
+	l := aabb.Lower.X
+	b := aabb.Lower.Y
+	r := aabb.Upper.X
+	t := aabb.Upper.Y
 */
 
 func (aabb *AABB) Valid() bool {
 	return aabb.Lower.X <= aabb.Upper.X && aabb.Lower.Y <= aabb.Upper.Y
 }
 
-func NewAABB(l,b,r,t vect.Float) AABB {
-	return AABB{vect.Vect{l,b}, vect.Vect{r,t}}
+func NewAABB(l, b, r, t vect.Float) AABB {
+	return AABB{vect.Vect{l, b}, vect.Vect{r, t}}
 }
 
 //returns the center of the aabb
@@ -75,13 +75,17 @@ func Expand(a AABB, v vect.Vect) AABB {
 func (aabb *AABB) Area() vect.Float {
 	return (aabb.Upper.X - aabb.Lower.X) * (aabb.Upper.Y - aabb.Lower.Y)
 }
- 
+
+func INLI_MergedArea(a, b AABB) vect.Float {
+	return (vect.FMax(a.Upper.X, b.Upper.X) - vect.FMin(a.Lower.X, b.Lower.X)) * (vect.FMax(a.Upper.Y, b.Upper.Y) - vect.FMin(a.Lower.Y, b.Lower.Y))
+}
+
 func MergedArea(a, b AABB) vect.Float {
-	return (vect.FMax(a.Upper.X, b.Upper.X) - vect.FMin(a.Lower.X, b.Lower.X))*(vect.FMax(a.Upper.Y, b.Upper.Y) - vect.FMin(a.Lower.Y, b.Lower.Y));
+	return INLI_MergedArea(a, b)
 }
 
 func Proximity(a, b AABB) vect.Float {
-	return vect.FAbs(a.Lower.X + a.Upper.X - b.Lower.X - b.Upper.X) + vect.FAbs(a.Lower.Y + a.Upper.Y - b.Lower.Y - b.Upper.Y)
+	return vect.FAbs(a.Lower.X+a.Upper.X-b.Lower.X-b.Upper.X) + vect.FAbs(a.Lower.Y+a.Upper.Y-b.Lower.Y-b.Upper.Y)
 }
 
 func TestOverlap2(a, b AABB) bool {
@@ -101,7 +105,5 @@ func TestOverlap2(a, b AABB) bool {
 }
 
 func TestOverlap(a, b AABB) bool {
-	return (a.Lower.X <= b.Upper.X && b.Lower.X <= a.Upper.X && a.Lower.Y <= b.Upper.Y && b.Lower.Y <= a.Upper.Y);
+	return (a.Lower.X <= b.Upper.X && b.Lower.X <= a.Upper.X && a.Lower.Y <= b.Upper.Y && b.Lower.Y <= a.Upper.Y)
 }
-	
-	

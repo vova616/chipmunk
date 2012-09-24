@@ -302,6 +302,15 @@ func (tree *BBTree) NodeReplaceChild(parent, child, value *Node) {
 	}
 }
 
+func (tree *BBTree) Remove(obj Indexable) {
+	leaf := tree.leaves[obj.Hash()]
+	delete(tree.leaves, obj.Hash())
+
+	tree.root = tree.SubtreeRemove(tree.root, leaf)
+	tree.PairsClear(leaf)
+	tree.NodeRecycle(leaf)
+}
+
 func (tree *BBTree) SubtreeRemove(subtree, leaf *Node) *Node {
 	if leaf == subtree {
 		return nil

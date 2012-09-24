@@ -1,29 +1,28 @@
 package transform
 
 import (
-	"github.com/vova616/chipmunk/vect"
+	vect "github.com/vova616/chipmunk/vect"
 	"math"
 )
 
-
 type Rotation struct {
 	//sine and cosine.
-	C, S vect.Float 
+	C, S vect.Float
 }
 
 func NewRotation(angle vect.Float) Rotation {
-	return Rotation{ 
+	return Rotation{
 		C: vect.Float(math.Cos(float64(angle))),
 		S: vect.Float(math.Sin(float64(angle))),
 	}
-} 
+}
 
 func (rot *Rotation) SetIdentity() {
 	rot.S = 0
 	rot.C = 1
 }
 
-func (rot *Rotation) SetAngle(angle  vect.Float) {
+func (rot *Rotation) SetAngle(angle vect.Float) {
 	rot.C = vect.Float(math.Cos(float64(angle)))
 	rot.S = vect.Float(math.Sin(float64(angle)))
 }
@@ -35,18 +34,18 @@ func (rot *Rotation) Angle() vect.Float {
 //rotates the input vector.
 func (rot *Rotation) RotateVect(v vect.Vect) vect.Vect {
 	return vect.Vect{
-		X: (v.X*rot.C) - (v.Y*rot.S),
-		Y: (v.X*rot.S) + (v.Y*rot.C),
+		X: (v.X * rot.C) - (v.Y * rot.S),
+		Y: (v.X * rot.S) + (v.Y * rot.C),
 	}
 }
 
 func (rot *Rotation) RotateVectInv(v vect.Vect) vect.Vect {
 	return vect.Vect{
-		X: (v.X*rot.C) + (v.Y*rot.S),
-		Y: (-v.X*rot.S) + (v.Y*rot.C),
+		X: (v.X * rot.C) + (v.Y * rot.S),
+		Y: (-v.X * rot.S) + (v.Y * rot.C),
 	}
 }
- 
+
 func RotateVect(v vect.Vect, r Rotation) vect.Vect {
 	return r.RotateVect(v)
 }
