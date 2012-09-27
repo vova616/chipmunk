@@ -16,11 +16,11 @@ type CircleShape struct {
 }
 
 // Creates a new CircleShape with the given center and radius.
-func NewCircle(pos vect.Vect, radius vect.Float) *Shape {
+func NewCircle(pos vect.Vect, radius float32) *Shape {
 	shape := newShape()
 	circle := &CircleShape{
 		Position: pos,
-		Radius:   radius,
+		Radius:   vect.Float(radius),
 		Shape:    shape,
 	}
 	shape.ShapeClass = circle
