@@ -3,6 +3,7 @@ package chipmunk
 import (
 	. "github.com/vova616/chipmunk/vect"
 	//. "github.com/vova616/chipmunk/transform"
+	"errors"
 	"fmt"
 	"math"
 	"time"
@@ -296,6 +297,47 @@ func PrintTree(node *Node) {
 
 func (space *Space) Space() *Space {
 	return space
+}
+
+func (space *Space) ActiveBody(body *Body) error {
+	if body.IsRogue() {
+		return errors.New("Internal error: Attempting to activate a rouge body.")
+	}
+
+	space.Bodies = append(space.Bodies, body)
+
+	for _, shape := range body.Shapes {
+		space.staticShapes.Remove(shape)
+		space.activeShapes.Insert(shape)
+	}
+	/*
+		for _, arb := range body.Arbiters {
+			bodyA := arb.BodyA
+			if body == bodyA || bodyA.IsStatic() {
+
+					int numContacts = arb->numContacts;
+					cpContact *contacts = arb->contacts;
+
+					// Restore contact values back to the space's contact buffer memory
+					arb->contacts = cpContactBufferGetArray(space);
+					memcpy(arb->contacts, contacts, numContacts*sizeof(cpContact));
+					cpSpacePushContacts(space, numContacts);
+
+					// Reinsert the arbiter into the arbiter cache
+					arbHashID := hashPair(arb.BodyA.Hash()*20, arb.BodyB.Hash()*10)
+					space.cachedArbiters[arbHashID] = arb
+
+					// Update the arbiter's state
+					arb.stamp = space.stamp
+					space->arbiters = append(space->arbiters, arb)
+
+					//cpfree(contacts);
+
+			}
+		}
+	*/
+
+	return nil
 }
 
 func (space *Space) ProcessComponents(dt Float) {

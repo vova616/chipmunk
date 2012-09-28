@@ -209,20 +209,20 @@ func (body *Body) ComponentActive() {
 		return
 	}
 	return
-	/*
-		space := body.space
-		b := body
-		for b != nil {
-			next := b.node.Next
 
-			b.node.IdleTime = 0
-			b.node.Root = nil
-			b.node.Next = nil
-			//cpSpaceActivateBody(space, b);
+	space := body.space
+	b := body
+	for b != nil {
+		next := b.node.Next
 
-			b = next
-		}
-	*/
+		b.node.IdleTime = 0
+		b.node.Root = nil
+		b.node.Next = nil
+		space.ActiveBody(body)
+
+		b = next
+	}
+
 	//for i,sleeping
 	//cpArrayDeleteObj(space->sleepingComponents, root);
 }
