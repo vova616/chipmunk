@@ -273,6 +273,14 @@ func (body *Body) AddTorque(t float32) {
 	body.t += Float(t)
 }
 
+func (body *Body) Torque() float32 {
+	return float32(body.t)
+}
+
+func (body *Body) AngularVelocity() float32 {
+	return float32(body.w)
+}
+
 func (body *Body) SetTorque(t float32) {
 	body.t = Float(t)
 }

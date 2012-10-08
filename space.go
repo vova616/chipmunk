@@ -130,6 +130,17 @@ func NewSpace() (space *Space) {
 	return
 }
 
+func (space *Space) Destory() {
+	space.Bodies = nil
+	space.sleepingComponents = nil
+	space.staticShapes = nil
+	space.activeShapes = nil
+	space.cachedArbiters = nil
+	space.Arbiters = nil
+	space.ArbiterBuffer = nil
+	space.ContactBuffer = nil
+}
+
 func (space *Space) Step(dt Float) {
 
 	// don't step if the timestep is 0!

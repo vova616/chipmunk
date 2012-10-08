@@ -306,6 +306,10 @@ func (tree *BBTree) Remove(obj Indexable) {
 	leaf := tree.leaves[obj.Hash()]
 	delete(tree.leaves, obj.Hash())
 
+	if leaf == nil {
+		return
+	}
+
 	tree.root = tree.SubtreeRemove(tree.root, leaf)
 	tree.PairsClear(leaf)
 	tree.NodeRecycle(leaf)
