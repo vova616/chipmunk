@@ -463,10 +463,14 @@ func (space *Space) RemoveBody(body *Body) {
 
 func (space *Space) removeShape(shape *Shape) {
 	shape.space = nil
+	if shape.Body.IsStatic() {
+		space.staticShapes.Remove(shape)
+	} else {
+		space.activeShapes.Remove(shape)
+	}
 	shape.Body = nil
 	shape.UserData = nil
 	shape.ShapeClass = nil
-	space.activeShapes.Remove(shape)
 }
 
 // Creates an arbiter between the given shapes.

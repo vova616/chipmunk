@@ -191,9 +191,13 @@ func (body *Body) setAngle(angle Float) {
 }
 
 func (body *Body) BodyActivate() {
+	//TODO: make it work with sleeping
+	if body.IsStatic() {
+		return
+	}
+
 	if !body.IsRogue() {
 		body.node.IdleTime = 0
-
 	}
 }
 
