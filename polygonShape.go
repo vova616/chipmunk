@@ -123,10 +123,10 @@ func (poly *PolygonShape) Clone(s *Shape) ShapeClass {
 
 func (poly *PolygonShape) Clone2(s *Shape) *PolygonShape {
 	clone := *poly
-	clone.Verts = make(Vertices, clone.NumVerts)
-	clone.TVerts = make(Vertices, clone.NumVerts)
-	clone.Axes = make([]PolygonAxis, clone.NumVerts)
-	clone.TAxes = make([]PolygonAxis, clone.NumVerts)
+	clone.Verts = make(Vertices, len(poly.Verts))
+	clone.TVerts = make(Vertices, len(poly.TVerts))
+	clone.Axes = make([]PolygonAxis, len(poly.Axes))
+	clone.TAxes = make([]PolygonAxis, len(poly.TAxes))
 
 	clone.Verts = append(clone.Verts, poly.Verts...)
 	clone.TVerts = append(clone.TVerts, poly.TVerts...)

@@ -73,8 +73,9 @@ func (box *BoxShape) ShapeType() ShapeType {
 // Returns ShapeType_Box. Needed to implemet the ShapeClass interface.
 func (box *BoxShape) Clone(s *Shape) ShapeClass {
 	clone := *box
-	clone.Polygon = box.Polygon.Clone2(s)
+	clone.Polygon = &PolygonShape{Shape: s}
 	clone.Shape = s
+	clone.UpdatePoly()
 	return &clone
 }
 
