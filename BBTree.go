@@ -2,8 +2,8 @@ package chipmunk
 
 import (
 	//"container/list"
-	//"fmt"
 	. "github.com/vova616/chipmunk/vect"
+	//"log"
 	"time"
 )
 
@@ -24,9 +24,8 @@ type BBTree struct {
 	leaves HashSet
 	root   *Node
 
-	pooledNodes      *Node
-	pooledPairs      *Pair
-	allocatedBuffers []Contact
+	pairBuffer []*Pair
+	nodeBuffer []*Node
 
 	stamp time.Duration
 }
@@ -87,9 +86,10 @@ type Pair struct {
 func NewBBTree(staticIndex *SpatialIndex) *SpatialIndex {
 	tree := &BBTree{}
 	tree.leaves = make(map[HashValue]*Node)
-	tree.allocatedBuffers = make([]Contact, 0)
-	tree.SpatialIndex = NewSpartialIndex(tree, staticIndex)
 
+	tree.SpatialIndex = NewSpartialIndex(tree, staticIndex)
+	tree.pairBuffer = make([]*Pair, 0)
+	tree.nodeBuffer = make([]*Node, 0)
 	return tree.SpatialIndex
 }
 
@@ -265,19 +265,45 @@ func (tree *BBTree) PairInsert(a, b *Node) {
 }
 
 func (tree *BBTree) NodeRecycle(node *Node) {
-
+	*node = Node{}
+	tree.nodeBuffer = append(tree.nodeBuffer, node)
 }
 
 func (tree *BBTree) NodeFromPool() *Node {
-	return &Node{}
+	var node *Node
+	if len(tree.nodeBuffer) > 0 {
+		node, tree.nodeBuffer = tree.nodeBuffer[len(tree.nodeBuffer)-1], tree.nodeBuffer[:len(tree.nodeBuffer)-1]
+	} else {
+		buff := make([]*Node, 100)
+		//log.Println("New node buff")
+		for i, _ := range buff {
+			buff[i] = &Node{}
+		}
+		tree.nodeBuffer = append(tree.nodeBuffer, buff...)
+		node, tree.nodeBuffer = tree.nodeBuffer[len(tree.nodeBuffer)-1], tree.nodeBuffer[:len(tree.nodeBuffer)-1]
+	}
+	return node
 }
 
 func (tree *BBTree) PairRecycle(pair *Pair) {
-
+	*pair = Pair{}
+	tree.pairBuffer = append(tree.pairBuffer, pair)
 }
 
 func (tree *BBTree) PairFromPool() *Pair {
-	return &Pair{}
+	var pair *Pair
+	if len(tree.pairBuffer) > 0 {
+		pair, tree.pairBuffer = tree.pairBuffer[len(tree.pairBuffer)-1], tree.pairBuffer[:len(tree.pairBuffer)-1]
+	} else {
+		buff := make([]*Pair, 100)
+		//log.Println("New pair buff")
+		for i, _ := range buff {
+			buff[i] = &Pair{}
+		}
+		tree.pairBuffer = append(tree.pairBuffer, buff...)
+		pair, tree.pairBuffer = tree.pairBuffer[len(tree.pairBuffer)-1], tree.pairBuffer[:len(tree.pairBuffer)-1]
+	}
+	return pair
 }
 
 func (tree *BBTree) NodeReplaceChild(parent, child, value *Node) {
