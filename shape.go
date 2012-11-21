@@ -2,7 +2,7 @@ package chipmunk
 
 import (
 	"github.com/vova616/chipmunk/transform"
-	. "github.com/vova616/chipmunk/vect"
+	"github.com/vova616/chipmunk/vect"
 	"math"
 	//"fmt"
 )
@@ -30,11 +30,11 @@ type Shape struct {
 	IsSensor bool
 
 	/// Coefficient of restitution. (elasticity)
-	e Float
+	e vect.Float
 	/// Coefficient of friction.
-	u Float
+	u vect.Float
 	/// Surface velocity used when solving for friction.
-	Surface_v Vect
+	Surface_v vect.Vect
 
 	/// User definable data pointer.
 	/// Generally this points to your the game object class so you can access it
@@ -58,15 +58,15 @@ func newShape() *Shape {
 
 }
 
-func (shape *Shape) Velocity() (Vect, bool) {
+func (shape *Shape) Velocity() (vect.Vect, bool) {
 	return shape.Body.v, shape.velocityIndexed
 }
 
-func (shape *Shape) SetFriction(friction Float) {
+func (shape *Shape) SetFriction(friction vect.Float) {
 	shape.u = friction
 }
 
-func (shape *Shape) SetElasticity(e Float) {
+func (shape *Shape) SetElasticity(e vect.Float) {
 	shape.e = e
 }
 

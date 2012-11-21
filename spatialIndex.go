@@ -1,7 +1,7 @@
 package chipmunk
 
 import (
-	. "github.com/vova616/chipmunk/vect"
+	"github.com/vova616/chipmunk/vect"
 	"time"
 )
 
@@ -61,7 +61,7 @@ type Indexable interface {
 	Hashable
 	AABB() AABB
 	Shape() *Shape
-	Velocity() (Vect, bool)
+	Velocity() (vect.Vect, bool)
 }
 
 type Data interface{}
@@ -87,5 +87,5 @@ type SpatialIndexClass interface {
 	Stamp() time.Duration
 
 	Query(obj Indexable, aabb AABB, fnc SpatialIndexQueryFunc, data Data)
-	SegmentQuery(obj Indexable, a, b Vect, t_exit Float, fnc func(), data Data)
+	SegmentQuery(obj Indexable, a, b vect.Vect, t_exit vect.Float, fnc func(), data Data)
 }

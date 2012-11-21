@@ -2,7 +2,7 @@ package chipmunk
 
 import (
 	//"container/list"
-	. "github.com/vova616/chipmunk/vect"
+	"github.com/vova616/chipmunk/vect"
 	//"log"
 	"time"
 )
@@ -121,7 +121,7 @@ func (tree *BBTree) GetBB(obj Indexable) AABB {
 	v, ok := obj.Velocity()
 	if ok {
 
-		coef := Float(0.1)
+		coef := vect.Float(0.1)
 
 		l := bb.Lower.X
 		b := bb.Lower.Y
@@ -131,9 +131,9 @@ func (tree *BBTree) GetBB(obj Indexable) AABB {
 		x := (r - l) * coef
 		y := (t - b) * coef
 
-		v = Mult(v, 0.1)
+		v = vect.Mult(v, 0.1)
 
-		return NewAABB(l+FMin(-x, v.X), b+FMin(-y, v.Y), r+FMax(x, v.X), t+FMax(y, v.Y))
+		return NewAABB(l+vect.FMin(-x, v.X), b+vect.FMin(-y, v.Y), r+vect.FMax(x, v.X), t+vect.FMax(y, v.Y))
 	}
 
 	return bb

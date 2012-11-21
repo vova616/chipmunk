@@ -1,7 +1,7 @@
 package chipmunk
 
 import (
-	. "github.com/vova616/chipmunk/vect"
+	"github.com/vova616/chipmunk/vect"
 	//. "github.com/vova616/chipmunk/transform"
 	"errors"
 	"fmt"
@@ -18,33 +18,33 @@ type Space struct {
 	Iterations int
 
 	/// Gravity to pass to rigid bodies when integrating velocity.
-	Gravity Vect
+	Gravity vect.Vect
 
 	/// Damping rate expressed as the fraction of velocity bodies retain each second.
 	/// A value of 0.9 would mean that each body's velocity will drop 10% per second.
 	/// The default value is 1.0, meaning no damping is applied.
 	/// @note This damping value is different than those of cpDampedSpring and cpDampedRotarySpring.
-	damping Float
+	damping vect.Float
 
 	/// Speed threshold for a body to be considered idle.
 	/// The default value of 0 means to let the space guess a good threshold based on gravity.
-	idleSpeedThreshold Float
+	idleSpeedThreshold vect.Float
 
 	/// Time a group of bodies must remain idle in order to fall asleep.
 	/// Enabling sleeping also implicitly enables the the contact graph.
 	/// The default value of INFINITY disables the sleeping algorithm.
-	sleepTimeThreshold Float
+	sleepTimeThreshold vect.Float
 
 	/// Amount of encouraged penetration between colliding shapes.
 	/// Used to reduce oscillating contacts and keep the collision cache warm.
 	/// Defaults to 0.1. If you have poor simulation quality,
 	/// increase this number as much as possible without allowing visible amounts of overlap.
-	collisionSlop Float
+	collisionSlop vect.Float
 
 	/// Determines how fast overlapping shapes are pushed apart.
 	/// Expressed as a fraction of the error remaining after each second.
 	/// Defaults to pow(1.0 - 0.1, 60.0) meaning that Chipmunk fixes 10% of overlap each frame at 60Hz.
-	collisionBias Float
+	collisionBias vect.Float
 
 	/// Number of frames that contact information should persist.
 	/// Defaults to 3. There is probably never a reason to change this value.
@@ -54,7 +54,7 @@ type Space struct {
 	/// Disabled by default for a small performance boost. Enabled implicitly when the sleeping feature is enabled.
 	enableContactGraph bool
 
-	curr_dt Float
+	curr_dt vect.Float
 
 	Bodies             []*Body
 	sleepingComponents []*Body
@@ -91,12 +91,12 @@ func NewSpace() (space *Space) {
 	space = &Space{}
 	space.Iterations = 20
 
-	space.Gravity = Vector_Zero
+	space.Gravity = vect.Vector_Zero
 
 	space.damping = 1
 
 	space.collisionSlop = 0.5
-	space.collisionBias = Float(math.Pow(1.0-0.1, 60))
+	space.collisionBias = vect.Float(math.Pow(1.0-0.1, 60))
 	space.collisionPersistence = 3
 
 	space.Bodies = make([]*Body, 0)
@@ -141,7 +141,7 @@ func (space *Space) Destory() {
 	space.ContactBuffer = nil
 }
 
-func (space *Space) Step(dt Float) {
+func (space *Space) Step(dt vect.Float) {
 
 	// don't step if the timestep is 0!
 	if dt == 0 {
@@ -215,22 +215,22 @@ func (space *Space) Step(dt Float) {
 	}
 
 	slop := space.collisionSlop
-	biasCoef := Float(1.0 - math.Pow(float64(space.collisionBias), float64(dt)))
+	biasCoef := vect.Float(1.0 - math.Pow(float64(space.collisionBias), float64(dt)))
 	for _, arb := range space.Arbiters {
-		arb.preStep(Float(1/dt), slop, biasCoef)
+		arb.preStep(vect.Float(1/dt), slop, biasCoef)
 	}
 
-	damping := Float(math.Pow(float64(space.damping), float64(dt)))
+	damping := vect.Float(math.Pow(float64(space.damping), float64(dt)))
 
 	for _, body := range bodies {
 		if body.IgnoreGravity {
-			body.UpdateVelocity(Vector_Zero, damping, dt)
+			body.UpdateVelocity(vect.Vector_Zero, damping, dt)
 			continue
 		}
 		body.UpdateVelocity(space.Gravity, damping, dt)
 	}
 
-	dt_coef := Float(0)
+	dt_coef := vect.Float(0)
 	if prev_dt != 0 {
 		dt_coef = dt / prev_dt
 	}
@@ -351,14 +351,14 @@ func (space *Space) ActiveBody(body *Body) error {
 	return nil
 }
 
-func (space *Space) ProcessComponents(dt Float) {
+func (space *Space) ProcessComponents(dt vect.Float) {
 
 	sleep := math.IsInf(float64(space.sleepTimeThreshold), 0)
 	bodies := space.Bodies
 	_ = bodies
 	if sleep {
 		dv := space.idleSpeedThreshold
-		dvsq := Float(0)
+		dvsq := vect.Float(0)
 		if dv == 0 {
 			dvsq = dv * dv
 		} else {
@@ -366,7 +366,7 @@ func (space *Space) ProcessComponents(dt Float) {
 		}
 
 		for _, body := range space.Bodies {
-			keThreshold := Float(0)
+			keThreshold := vect.Float(0)
 			if dvsq != 0 {
 				keThreshold = body.m * dvsq
 			}
@@ -499,7 +499,7 @@ func (space *Space) CreateArbiter(sa, sb *Shape) *Arbiter {
 	arb.BodyA = arb.ShapeA.Body
 	arb.BodyB = arb.ShapeB.Body
 
-	arb.Surface_vr = Vect{}
+	arb.Surface_vr = vect.Vect{}
 	arb.stamp = 0
 	arb.nodeA = new(ArbiterEdge)
 	arb.nodeB = new(ArbiterEdge)
