@@ -22,6 +22,7 @@ type BoxShape struct {
 // Creates a new BoxShape with given position, width and height.
 func NewBox(pos vect.Vect, w, h vect.Float) *Shape {
 	shape := newShape()
+
 	box := &BoxShape{
 		Polygon:  &PolygonShape{Shape: shape},
 		Width:    w,
@@ -32,6 +33,14 @@ func NewBox(pos vect.Vect, w, h vect.Float) *Shape {
 
 	hw := w / 2.0
 	hh := h / 2.0
+
+	if hw < 0 {
+		hw = -hw
+	}
+	if hh < 0 {
+		hh = -hh
+	}
+
 	box.verts = [4]vect.Vect{
 		{-hw, -hh},
 		{-hw, hh},
@@ -54,6 +63,14 @@ func (box *BoxShape) Moment(mass float32) vect.Float {
 func (box *BoxShape) UpdatePoly() {
 	hw := box.Width / 2.0
 	hh := box.Height / 2.0
+
+	if hw < 0 {
+		hw = -hw
+	}
+	if hh < 0 {
+		hh = -hh
+	}
+
 	box.verts = [4]vect.Vect{
 		{-hw, -hh},
 		{-hw, hh},
