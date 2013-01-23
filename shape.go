@@ -82,7 +82,7 @@ func (shape *Shape) Clone() *Shape {
 	clone := *shape
 	cc := &clone
 	cc.space = nil
-	cc.DefaultHash.hash = 0
+	cc.DefaultHash.Reset()
 	cc.Body = nil
 	cc.ShapeClass = cc.ShapeClass.Clone(cc)
 	return cc

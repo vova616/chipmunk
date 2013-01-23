@@ -383,13 +383,13 @@ func findVerts(contacts []*Contact, poly1, poly2 *PolygonShape, n vect.Vect, dis
 	for i, v := range poly1.TVerts {
 		if poly2.ContainsVert(v) {
 			c := nextContact(contacts, &num)
-			c.reset(v, n, dist, hashPair(poly1.Shape.hash, HashValue(i)))
+			c.reset(v, n, dist, hashPair(poly1.Shape.Hash(), HashValue(i)))
 		}
 	}
 
 	for i, v := range poly2.TVerts {
 		if poly1.ContainsVert(v) {
-			nextContact(contacts, &num).reset(v, n, dist, hashPair(poly2.Shape.hash, HashValue(i)))
+			nextContact(contacts, &num).reset(v, n, dist, hashPair(poly2.Shape.Hash(), HashValue(i)))
 		}
 	}
 
@@ -408,13 +408,13 @@ func findVertsFallback(contacts []*Contact, poly1, poly2 *PolygonShape, n vect.V
 	for i, v := range poly1.TVerts {
 		if poly2.ContainsVertPartial(v, vect.Mult(n, -1)) {
 			c := nextContact(contacts, &num)
-			c.reset(v, n, dist, hashPair(poly1.Shape.hash, HashValue(i)))
+			c.reset(v, n, dist, hashPair(poly1.Shape.Hash(), HashValue(i)))
 		}
 	}
 
 	for i, v := range poly2.TVerts {
 		if poly1.ContainsVertPartial(v, n) {
-			nextContact(contacts, &num).reset(v, n, dist, hashPair(poly2.Shape.hash, HashValue(i)))
+			nextContact(contacts, &num).reset(v, n, dist, hashPair(poly2.Shape.Hash(), HashValue(i)))
 		}
 	}
 
@@ -437,7 +437,7 @@ func findPoinsBehindSeg(contacts []*Contact, num *int, seg *SegmentShape, poly *
 		if vect.Dot(v, n) < vect.Dot(seg.Tn, seg.Ta)*coef+seg.Radius {
 			dt := vect.Cross(seg.Tn, v)
 			if dta >= dt && dt >= dtb {
-				nextContact(contacts, num).reset(v, n, pDist, hashPair(poly.Shape.hash, HashValue(i)))
+				nextContact(contacts, num).reset(v, n, pDist, hashPair(poly.Shape.Hash(), HashValue(i)))
 			}
 		}
 	}
@@ -476,10 +476,10 @@ func seg2polyFunc(contacts []*Contact, seg *SegmentShape, poly *PolygonShape) in
 	va := vect.Add(seg.Ta, vect.Mult(poly_n, seg.Radius))
 	vb := vect.Add(seg.Tb, vect.Mult(poly_n, seg.Radius))
 	if poly.ContainsVert(va) {
-		nextContact(contacts, &num).reset(va, poly_n, poly_min, hashPair(seg.Shape.hash, 0))
+		nextContact(contacts, &num).reset(va, poly_n, poly_min, hashPair(seg.Shape.Hash(), 0))
 	}
 	if poly.ContainsVert(vb) {
-		nextContact(contacts, &num).reset(vb, poly_n, poly_min, hashPair(seg.Shape.hash, 1))
+		nextContact(contacts, &num).reset(vb, poly_n, poly_min, hashPair(seg.Shape.Hash(), 1))
 	}
 
 	if minNorm >= poly_min || minNeg >= poly_min {

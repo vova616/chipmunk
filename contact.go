@@ -4,8 +4,6 @@ import (
 	"github.com/vova616/chipmunk/vect"
 )
 
-type HashValue uint32
-
 type Contact struct {
 	p, n vect.Vect
 	dist vect.Float
@@ -32,4 +30,8 @@ func (con *Contact) reset(pos, norm vect.Vect, dist vect.Float, hash HashValue) 
 
 func (con *Contact) Normal() vect.Vect {
 	return con.n
+}
+
+func (con *Contact) Position() vect.Vect {
+	return con.p
 }

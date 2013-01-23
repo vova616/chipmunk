@@ -72,10 +72,9 @@ func (arb1 *Arbiter) equals(arb2 *Arbiter) bool {
 	return false
 }
 
-func (arb *Arbiter) update(contacts []*Contact, numContacts int) {
+func (arb *Arbiter) update(a, b *Shape, contacts []*Contact, numContacts int) {
 	oldContacts := arb.Contacts
-	sa := arb.ShapeA
-	sb := arb.ShapeB
+	arb.ShapeA, arb.ShapeB = a, b
 
 	for _, oldC := range oldContacts {
 		for _, newC := range contacts {
@@ -90,10 +89,14 @@ func (arb *Arbiter) update(contacts []*Contact, numContacts int) {
 	arb.Contacts = contacts
 	arb.NumContacts = numContacts
 
-	arb.u = sa.u * sb.u
-	arb.e = sa.e * sb.e
+	arb.u = a.u * b.u
+	arb.e = a.e * b.e
 
-	arb.Surface_vr = vect.Sub(sa.Surface_v, sb.Surface_v)
+	arb.Surface_vr = vect.Sub(a.Surface_v, b.Surface_v)
+
+	if arb.state == arbiterStateCached {
+		arb.state = arbiterStateFirstColl
+	}
 }
 
 func (arb *Arbiter) Ignore() {
@@ -143,7 +146,7 @@ func (arb *Arbiter) preStep(inv_dt, slop, bias vect.Float) {
 		// Calculate the target bias velocity.
 		ds := con.dist + slop
 		if 0 > ds {
-			con.bias = -bias*inv_dt*con.dist + slop
+			con.bias = -bias * inv_dt * (con.dist + slop)
 		} else {
 			con.bias = 0
 		}

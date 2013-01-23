@@ -5,6 +5,7 @@ import (
 	//. "github.com/vova616/chipmunk/transform"
 	"errors"
 	"fmt"
+	//"github.com/davecgh/go-spew/spew"
 	"math"
 	"time"
 )
@@ -64,7 +65,7 @@ type Space struct {
 	staticShapes *SpatialIndex
 	activeShapes *SpatialIndex
 
-	cachedArbiters map[HashValue]*Arbiter
+	cachedArbiters map[HashPair]*Arbiter
 	Arbiters       []*Arbiter
 
 	ArbiterBuffer []*Arbiter
@@ -104,7 +105,7 @@ func NewSpace() (space *Space) {
 
 	space.staticShapes = NewBBTree(nil)
 	space.activeShapes = NewBBTree(space.staticShapes)
-	space.cachedArbiters = make(map[HashValue]*Arbiter)
+	space.cachedArbiters = make(map[HashPair]*Arbiter)
 	space.Arbiters = make([]*Arbiter, 0)
 	space.ArbiterBuffer = make([]*Arbiter, ArbiterBufferSize)
 
@@ -207,8 +208,6 @@ func (space *Space) Step(dt vect.Float) {
 			space.ArbiterBuffer = append(space.ArbiterBuffer, arb)
 			c := arb.Contacts
 			if c != nil {
-				arb.Contacts = nil
-				arb.NumContacts = 0
 				space.ContactBuffer = append(space.ContactBuffer, c)
 			}
 		}
@@ -242,11 +241,18 @@ func (space *Space) Step(dt vect.Float) {
 	//fmt.Println("STEP")
 	start = time.Now()
 
+	//fmt.Println("Arbiters", len(space.Arbiters), biasCoef, dt)
+	//spew.Config.MaxDepth = 3
+	//spew.Config.Indent = "\t"
 	for i := 0; i < space.Iterations; i++ {
 		for _, arb := range space.Arbiters {
 			arb.applyImpulse()
+			//spew.Dump(arb)
+			//spew.Printf("%+v\n", arb)
 		}
 	}
+	//fmt.Println("####")
+	//fmt.Println("")
 
 	//MultiThreadGo()
 	//for i:=0; i<8; i++ {
@@ -504,6 +510,10 @@ func (space *Space) CreateArbiter(sa, sb *Shape) *Arbiter {
 	arb.nodeA = new(ArbiterEdge)
 	arb.nodeB = new(ArbiterEdge)
 	arb.state = arbiterStateFirstColl
+	arb.Contacts = nil
+	arb.NumContacts = 0
+	arb.e = 0
+	arb.u = 0
 
 	return arb
 }
@@ -558,16 +568,12 @@ func SpaceCollideShapes(a, b *Shape, space *Space) {
 	// Get an arbiter from space->arbiterSet for the two shapes.
 	// This is where the persistant contact magic comes from.
 
-	arbHashID := hashPair(a.Hash()*20, b.Hash()*10)
+	arbHashID := newPair(a, b)
 
 	var arb *Arbiter
 
-	arbt, exist := space.cachedArbiters[arbHashID]
-	if exist &&
-		((arbt.ShapeA == a && arbt.ShapeB == b) ||
-			(arbt.ShapeA == b && arbt.ShapeB == a)) {
-		arb = arbt
-	} else {
+	arb, exist := space.cachedArbiters[arbHashID]
+	if !exist {
 		arb = space.CreateArbiter(a, b)
 	}
 
@@ -576,7 +582,7 @@ func SpaceCollideShapes(a, b *Shape, space *Space) {
 	if arb.Contacts != nil {
 		oldContacts = arb.Contacts
 	}
-	arb.update(contacts, numContacts)
+	arb.update(a, b, contacts, numContacts)
 	if oldContacts != nil {
 		space.ContactBuffer = append(space.ContactBuffer, oldContacts)
 	}
