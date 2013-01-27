@@ -507,8 +507,8 @@ func (space *Space) CreateArbiter(sa, sb *Shape) *Arbiter {
 
 	arb.Surface_vr = vect.Vect{}
 	arb.stamp = 0
-	arb.nodeA = new(ArbiterEdge)
-	arb.nodeB = new(ArbiterEdge)
+	//arb.nodeA = new(ArbiterEdge)
+	//arb.nodeB = new(ArbiterEdge)
 	arb.state = arbiterStateFirstColl
 	arb.Contacts = nil
 	arb.NumContacts = 0

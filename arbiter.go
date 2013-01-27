@@ -36,7 +36,7 @@ type Arbiter struct {
 	// The number of contact points.
 	NumContacts int
 
-	nodeA, nodeB *ArbiterEdge
+	//nodeA, nodeB *ArbiterEdge
 
 	/// Calculated value to use for the elasticity coefficient.
 	/// Override in a pre-solve collision handler for custom behavior.
@@ -75,6 +75,7 @@ func (arb1 *Arbiter) equals(arb2 *Arbiter) bool {
 func (arb *Arbiter) update(a, b *Shape, contacts []*Contact, numContacts int) {
 	oldContacts := arb.Contacts
 	arb.ShapeA, arb.ShapeB = a, b
+	arb.BodyA, arb.BodyB = arb.ShapeA.Body, arb.ShapeB.Body
 
 	for _, oldC := range oldContacts {
 		for _, newC := range contacts {
