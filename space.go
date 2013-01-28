@@ -59,6 +59,7 @@ type Space struct {
 
 	Bodies             []*Body
 	sleepingComponents []*Body
+	deleteBodies       []*Body
 
 	stamp time.Duration
 
@@ -101,6 +102,7 @@ func NewSpace() (space *Space) {
 	space.collisionPersistence = 3
 
 	space.Bodies = make([]*Body, 0)
+	space.deleteBodies = make([]*Body, 0)
 	space.sleepingComponents = make([]*Body, 0)
 
 	space.staticShapes = NewBBTree(nil)
@@ -192,15 +194,9 @@ func (space *Space) Step(dt vect.Float) {
 			arb.state = arbiterStateCached
 			if arb.BodyA.CallbackHandler != nil {
 				arb.BodyA.CallbackHandler.CollisionExit(arb)
-				if arb.BodyA.deleted {
-					arb.BodyA.CallbackHandler = nil
-				}
 			}
 			if arb.BodyB.CallbackHandler != nil {
 				arb.BodyB.CallbackHandler.CollisionExit(arb)
-				if arb.BodyB.deleted {
-					arb.BodyB.CallbackHandler = nil
-				}
 			}
 		}
 		if ticks > time.Duration(space.collisionPersistence) || deleted {
@@ -268,6 +264,13 @@ func (space *Space) Step(dt vect.Float) {
 		if arb.ShapeB.Body.CallbackHandler != nil {
 			arb.ShapeB.Body.CallbackHandler.CollisionPostSolve(arb)
 		}
+	}
+
+	if len(space.deleteBodies) > 0 {
+		for _, body := range space.deleteBodies {
+			space.removeBody(body)
+		}
+		space.deleteBodies = space.deleteBodies[0:0]
 	}
 
 	stepEnd := time.Now()
@@ -447,6 +450,16 @@ func (space *Space) ProcessComponents(dt vect.Float) {
 	*/
 }
 
+func (space *Space) removeBody(body *Body) {
+	for _, shape := range body.Shapes {
+		space.RemoveShape(shape)
+	}
+	body.space = nil
+	body.Shapes = nil
+	body.UserData = nil
+	body.CallbackHandler = nil
+}
+
 func (space *Space) RemoveBody(body *Body) {
 	if body == nil {
 		return
@@ -454,20 +467,15 @@ func (space *Space) RemoveBody(body *Body) {
 	body.BodyActivate()
 	for i, pbody := range space.Bodies {
 		if pbody == body {
-			space.Bodies = append(space.Bodies[:i], space.Bodies[i+1:]...)
+			space.Bodies[i], space.Bodies = space.Bodies[len(space.Bodies)-1], space.Bodies[:len(space.Bodies)-1]
 			break
 		}
 	}
-	for _, shape := range body.Shapes {
-		space.removeShape(shape)
-	}
-	body.space = nil
-	body.Shapes = nil
-	body.UserData = nil
 	body.deleted = true
+	space.deleteBodies = append(space.deleteBodies, body)
 }
 
-func (space *Space) removeShape(shape *Shape) {
+func (space *Space) RemoveShape(shape *Shape) {
 	shape.space = nil
 	if shape.Body.IsStatic() {
 		space.staticShapes.Remove(shape)
