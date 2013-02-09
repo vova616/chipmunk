@@ -13,6 +13,8 @@ type ComponentNode struct {
 }
 
 type BodyType uint8
+type UpdatePositionFunction func(dt vect.Float)
+type UpdateVelocityFunction func(gravity vect.Vect, damping, dt vect.Float)
 
 const (
 	BodyType_Static  = BodyType(0)
@@ -69,8 +71,10 @@ type Body struct {
 	/// User definable data pointer.
 	/// Generally this points to your the game object class so you can access it
 	/// when given a cpBody reference in a callback.
-	UserData        interface{}
-	CallbackHandler CollisionCallback
+	UserData           interface{}
+	CallbackHandler    CollisionCallback
+	UpdatePositionFunc UpdatePositionFunction
+	UpdateVelocityFunc UpdateVelocityFunction
 
 	/// Maximum velocity allowed when updating the velocity.
 	v_limit vect.Float
@@ -314,7 +318,10 @@ func (body *Body) Rot() (rx, ry float32) {
 }
 
 func (body *Body) UpdatePosition(dt vect.Float) {
-
+	if body.UpdatePositionFunc != nil {
+		body.UpdatePositionFunc(dt)
+		return
+	}
 	body.p = vect.Add(body.p, vect.Mult(vect.Add(body.v, body.v_bias), dt))
 	body.setAngle(body.a + (body.w+body.w_bias)*dt)
 
@@ -323,7 +330,10 @@ func (body *Body) UpdatePosition(dt vect.Float) {
 }
 
 func (body *Body) UpdateVelocity(gravity vect.Vect, damping, dt vect.Float) {
-
+	if body.UpdateVelocityFunc != nil {
+		body.UpdateVelocityFunc(gravity, damping, dt)
+		return
+	}
 	body.v = vect.Add(vect.Mult(body.v, damping), vect.Mult(vect.Add(gravity, vect.Mult(body.f, body.m_inv)), dt))
 
 	body.w = (body.w * damping) + (body.t * body.i_inv * dt)
