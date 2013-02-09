@@ -13,8 +13,8 @@ type ComponentNode struct {
 }
 
 type BodyType uint8
-type UpdatePositionFunction func(dt vect.Float)
-type UpdateVelocityFunction func(gravity vect.Vect, damping, dt vect.Float)
+type UpdatePositionFunction func(body *Body, dt vect.Float)
+type UpdateVelocityFunction func(body *Body, gravity vect.Vect, damping, dt vect.Float)
 
 const (
 	BodyType_Static  = BodyType(0)
@@ -319,7 +319,7 @@ func (body *Body) Rot() (rx, ry float32) {
 
 func (body *Body) UpdatePosition(dt vect.Float) {
 	if body.UpdatePositionFunc != nil {
-		body.UpdatePositionFunc(dt)
+		body.UpdatePositionFunc(body, dt)
 		return
 	}
 	body.p = vect.Add(body.p, vect.Mult(vect.Add(body.v, body.v_bias), dt))
@@ -331,7 +331,7 @@ func (body *Body) UpdatePosition(dt vect.Float) {
 
 func (body *Body) UpdateVelocity(gravity vect.Vect, damping, dt vect.Float) {
 	if body.UpdateVelocityFunc != nil {
-		body.UpdateVelocityFunc(gravity, damping, dt)
+		body.UpdateVelocityFunc(body, gravity, damping, dt)
 		return
 	}
 	body.v = vect.Add(vect.Mult(body.v, damping), vect.Mult(vect.Add(gravity, vect.Mult(body.f, body.m_inv)), dt))
