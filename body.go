@@ -285,6 +285,22 @@ func (body *Body) Torque() float32 {
 	return float32(body.t)
 }
 
+func (body *Body) VBias() vect.Vect {
+	return body.v_bias
+}
+
+func (body *Body) WBias() float32 {
+	return float32(body.w_bias)
+}
+
+func (body *Body) SetVBias(v vect.Vect) {
+	body.v_bias = v
+}
+
+func (body *Body) SetWBias(w float32) {
+	body.w_bias = vect.Float(w)
+}
+
 func (body *Body) AngularVelocity() float32 {
 	return float32(body.w)
 }
