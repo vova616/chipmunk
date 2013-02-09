@@ -458,6 +458,8 @@ func (space *Space) removeBody(body *Body) {
 	body.Shapes = nil
 	body.UserData = nil
 	body.CallbackHandler = nil
+	body.UpdateVelocityFunc = nil
+	body.UpdatePositionFunc = nil
 }
 
 func (space *Space) RemoveBody(body *Body) {
