@@ -39,6 +39,14 @@ func (rot *Rotation) RotateVect(v vect.Vect) vect.Vect {
 	}
 }
 
+//rotates the input vector.
+func (rot *Rotation) RotateVectPtr(v *vect.Vect) vect.Vect {
+	return vect.Vect{
+		X: (v.X * rot.C) - (v.Y * rot.S),
+		Y: (v.X * rot.S) + (v.Y * rot.C),
+	}
+}
+
 func (rot *Rotation) RotateVectInv(v vect.Vect) vect.Vect {
 	return vect.Vect{
 		X: (v.X * rot.C) + (v.Y * rot.S),
@@ -48,6 +56,10 @@ func (rot *Rotation) RotateVectInv(v vect.Vect) vect.Vect {
 
 func RotateVect(v vect.Vect, r Rotation) vect.Vect {
 	return r.RotateVect(v)
+}
+
+func RotateVectPtr(v *vect.Vect, r *Rotation) vect.Vect {
+	return r.RotateVectPtr(v)
 }
 
 func RotateVectInv(v vect.Vect, r Rotation) vect.Vect {

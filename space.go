@@ -57,6 +57,8 @@ type Space struct {
 
 	curr_dt vect.Float
 
+	Constraints []Constraint
+
 	Bodies             []*Body
 	sleepingComponents []*Body
 	deleteBodies       []*Body
@@ -100,6 +102,8 @@ func NewSpace() (space *Space) {
 	space.collisionSlop = 0.5
 	space.collisionBias = vect.Float(math.Pow(1.0-0.1, 60))
 	space.collisionPersistence = 3
+
+	space.Constraints = make([]Constraint, 0)
 
 	space.Bodies = make([]*Body, 0)
 	space.deleteBodies = make([]*Body, 0)

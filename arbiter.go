@@ -199,9 +199,11 @@ func (arb *Arbiter) applyCachedImpulse(dt_coef vect.Float) {
 	var j vect.Vect
 
 	for _, con := range arb.Contacts {
+		//transform.RotateVect(con.n, transform.Rotation{con.jnAcc, con.jtAcc})
 		j.X = ((con.n.X * con.jnAcc) - (con.n.Y * con.jtAcc)) * dt_coef
 		j.Y = ((con.n.X * con.jtAcc) + (con.n.Y * con.jnAcc)) * dt_coef
 
+		//apply_impulses(a, b, con.r1, con.r2, vect.Mult(j, dt_coef))
 		a.v.X = (-j.X * a.m_inv) + a.v.X
 		a.v.Y = (-j.Y * a.m_inv) + a.v.Y
 		a.w += a.i_inv * ((con.r1.X * -j.Y) - (con.r1.Y * -j.X))
