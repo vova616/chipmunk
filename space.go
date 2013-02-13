@@ -1,10 +1,10 @@
 package chipmunk
 
 import (
-	"github.com/vova616/chipmunk/vect"
-	//. "github.com/vova616/chipmunk/transform"
 	"errors"
 	"fmt"
+	"github.com/vova616/chipmunk/transform"
+	"github.com/vova616/chipmunk/vect"
 	//"github.com/davecgh/go-spew/spew"
 	"math"
 	"time"
@@ -343,7 +343,7 @@ func (space *Space) Space() *Space {
 	return space
 }
 
-func (space *Space) SpacePointQueryFirst(point vect.Vect, layers Layer, group Group) (shape *Shape) {
+func (space *Space) SpacePointQueryFirst(point vect.Vect, layers Layer, group Group, checkSensors bool) (shape *Shape) {
 
 	found := false
 	pointFunc := func(a, b Indexable) {
@@ -352,7 +352,10 @@ func (space *Space) SpacePointQueryFirst(point vect.Vect, layers Layer, group Gr
 		}
 		shapeB := b.Shape()
 		shapeA := a.Shape()
-		if !queryReject(shapeA, shapeB) {
+		if !queryRejectShapes(shapeA, shapeB) {
+			if !checkSensors && shapeB.IsSensor {
+				return
+			}
 			contacts := space.pullContactBuffer()
 			numContacts := collide(contacts, shapeA, shapeB)
 			if numContacts <= 0 {
@@ -364,10 +367,44 @@ func (space *Space) SpacePointQueryFirst(point vect.Vect, layers Layer, group Gr
 		}
 	}
 
-	dot := NewCircle(point, 0.5)
+	dot := NewCircle(vect.Vector_Zero, 0.5)
+	dot.BB = dot.update(transform.NewTransform(point, 0))
 	dot.Layer = layers
 	dot.Group = group
 	space.staticShapes.Query(dot, dot.AABB(), pointFunc)
+	if found {
+		return
+	}
+	space.activeShapes.Query(dot, dot.AABB(), pointFunc)
+
+	return
+}
+
+func (space *Space) SpacePointQuery(point vect.Vect, layers Layer, group Group, checkSensors bool) (shapes []*Shape) {
+
+	pointFunc := func(a, b Indexable) {
+		shapeB := b.Shape()
+		shapeA := a.Shape()
+		if !queryRejectShapes(shapeA, shapeB) {
+			if !checkSensors && shapeB.IsSensor {
+				return
+			}
+			contacts := space.pullContactBuffer()
+			numContacts := collide(contacts, shapeA, shapeB)
+			if numContacts <= 0 {
+				space.pushContactBuffer(contacts)
+				return
+			}
+			shapes = append(shapes, shapeB)
+		}
+	}
+
+	dot := NewCircle(vect.Vector_Zero, 0.5)
+	dot.BB = dot.update(transform.NewTransform(point, 0))
+	dot.Layer = layers
+	dot.Group = group
+	space.staticShapes.Query(dot, dot.AABB(), pointFunc)
+	space.activeShapes.Query(dot, dot.AABB(), pointFunc)
 
 	return
 }
@@ -658,6 +695,10 @@ func SpaceCollideShapes(a, b *Shape, space *Space) {
 	// Time stamp the arbiter so we know it was used recently.
 
 	arb.stamp = space.stamp
+}
+
+func queryRejectShapes(a, b *Shape) bool {
+	return a == b || (a.Group != 0 && a.Group == b.Group) || (a.Layer&b.Layer) == 0
 }
 
 func queryReject(a, b *Shape) bool {
