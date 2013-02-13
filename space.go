@@ -219,6 +219,11 @@ func (space *Space) Step(dt vect.Float) {
 		arb.preStep(vect.Float(1/dt), slop, biasCoef)
 	}
 
+	for _, con := range space.Constraints {
+		con.PreSolve()
+		con.PreStep(dt)
+	}
+
 	damping := vect.Float(math.Pow(float64(space.damping), float64(dt)))
 
 	for _, body := range bodies {
@@ -238,6 +243,10 @@ func (space *Space) Step(dt vect.Float) {
 		arb.applyCachedImpulse(dt_coef)
 	}
 
+	for _, con := range space.Constraints {
+		con.ApplyCachedImpulse(dt_coef)
+	}
+
 	//fmt.Println("STEP")
 	start = time.Now()
 
@@ -250,7 +259,12 @@ func (space *Space) Step(dt vect.Float) {
 			//spew.Dump(arb)
 			//spew.Printf("%+v\n", arb)
 		}
+
+		for _, con := range space.Constraints {
+			con.ApplyImpulse()
+		}
 	}
+
 	//fmt.Println("####")
 	//fmt.Println("")
 
@@ -260,6 +274,10 @@ func (space *Space) Step(dt vect.Float) {
 	//}
 	end = time.Now()
 	space.ApplyImpulsesTime = end.Sub(start)
+
+	for _, con := range space.Constraints {
+		con.PostSolve()
+	}
 
 	for _, arb := range space.Arbiters {
 		if arb.ShapeA.Body.CallbackHandler != nil {
@@ -452,45 +470,6 @@ func (space *Space) ProcessComponents(dt vect.Float) {
 			}
 		}
 	*/
-}
-
-func (space *Space) removeBody(body *Body) {
-	for _, shape := range body.Shapes {
-		space.RemoveShape(shape)
-	}
-	body.space = nil
-	body.Shapes = nil
-	body.UserData = nil
-	body.CallbackHandler = nil
-	body.UpdateVelocityFunc = nil
-	body.UpdatePositionFunc = nil
-}
-
-func (space *Space) RemoveBody(body *Body) {
-	if body == nil {
-		return
-	}
-	body.BodyActivate()
-	for i, pbody := range space.Bodies {
-		if pbody == body {
-			space.Bodies[i], space.Bodies = space.Bodies[len(space.Bodies)-1], space.Bodies[:len(space.Bodies)-1]
-			break
-		}
-	}
-	body.deleted = true
-	space.deleteBodies = append(space.deleteBodies, body)
-}
-
-func (space *Space) RemoveShape(shape *Shape) {
-	shape.space = nil
-	if shape.Body.IsStatic() {
-		space.staticShapes.Remove(shape)
-	} else {
-		space.activeShapes.Remove(shape)
-	}
-	shape.Body = nil
-	shape.UserData = nil
-	shape.ShapeClass = nil
 }
 
 // Creates an arbiter between the given shapes.
@@ -699,4 +678,85 @@ func (space *Space) AddShape(shape *Shape) *Shape {
 	}
 
 	return shape
+}
+
+func (space *Space) AddConstraint(constraint Constraint) Constraint {
+	con := constraint.Constraint()
+	if con.space != nil {
+		panic("This shape is already added to a space and cannot be added to another.")
+	}
+
+	con.BodyA.BodyActivate()
+	con.BodyB.BodyActivate()
+	space.Constraints = append(space.Constraints, constraint)
+
+	// Push onto the heads of the bodies' constraint lists
+	//cpBody *a = constraint->a, *b = constraint->b;
+	//constraint->next_a = a->constraintList; a->constraintList = constraint;
+	//constraint->next_b = b->constraintList; b->constraintList = constraint;
+	con.space = space
+
+	return constraint
+}
+
+func (space *Space) RemoveConstraint(constraint Constraint) {
+	con := constraint.Constraint()
+	if con.space == nil {
+		panic("Cannot remove a constraint that was not added to the space. (Removed twice maybe?)")
+	}
+
+	con.BodyA.BodyActivate()
+	con.BodyB.BodyActivate()
+
+	for i, c := range space.Constraints {
+		if constraint == c {
+			space.Constraints[i], space.Constraints = space.Constraints[len(space.Constraints)-1], space.Constraints[:len(space.Constraints)-1]
+			break
+		}
+	}
+
+	//cpBodyRemoveConstraint(constraint->a, constraint);
+	//cpBodyRemoveConstraint(constraint->b, constraint);
+	con.space = nil
+	con.BodyA = nil
+	con.BodyB = nil
+}
+
+func (space *Space) removeBody(body *Body) {
+	for _, shape := range body.Shapes {
+		space.RemoveShape(shape)
+	}
+	body.space = nil
+	body.Shapes = nil
+	body.UserData = nil
+	body.CallbackHandler = nil
+	body.UpdateVelocityFunc = nil
+	body.UpdatePositionFunc = nil
+}
+
+func (space *Space) RemoveBody(body *Body) {
+	if body == nil {
+		return
+	}
+	body.BodyActivate()
+	for i, pbody := range space.Bodies {
+		if pbody == body {
+			space.Bodies[i], space.Bodies = space.Bodies[len(space.Bodies)-1], space.Bodies[:len(space.Bodies)-1]
+			break
+		}
+	}
+	body.deleted = true
+	space.deleteBodies = append(space.deleteBodies, body)
+}
+
+func (space *Space) RemoveShape(shape *Shape) {
+	shape.space = nil
+	if shape.Body.IsStatic() {
+		space.staticShapes.Remove(shape)
+	} else {
+		space.activeShapes.Remove(shape)
+	}
+	shape.Body = nil
+	shape.UserData = nil
+	shape.ShapeClass = nil
 }

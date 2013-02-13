@@ -1,8 +1,10 @@
 package chipmunk
 
-import "github.com/vova616/chipmunk/vect"
-import "github.com/vova616/chipmunk/transform"
-import "math"
+import (
+	"github.com/vova616/chipmunk/transform"
+	"github.com/vova616/chipmunk/vect"
+	"math"
+)
 
 type PivotJoint struct {
 	BasicConstraint
@@ -16,26 +18,30 @@ type PivotJoint struct {
 	bias    vect.Vect
 }
 
-func NewPivotJoint(a, b *Body, anchor1, anchor2 vect.Vect) Constraint {
+func NewPivotJointAnchor(a, b *Body, anchor1, anchor2 vect.Vect) *PivotJoint {
 	return &PivotJoint{BasicConstraint: NewConstraint(a, b), Anchor1: anchor1, Anchor2: anchor2}
+}
+
+func NewPivotJoint(a, b *Body) *PivotJoint {
+	return NewPivotJointAnchor(a, b, vect.Vector_Zero, vect.Vector_Zero)
 }
 
 func (this *PivotJoint) PreStep(dt vect.Float) {
 	a, b := this.BodyA, this.BodyB
 
-	transform.RotateVect(this.Anchor1, transform.Rotation{a.rot.X, a.rot.Y})
-	transform.RotateVect(this.Anchor2, transform.Rotation{b.rot.X, b.rot.Y})
+	this.r1 = transform.RotateVect(this.Anchor1, transform.Rotation{a.rot.X, a.rot.Y})
+	this.r2 = transform.RotateVect(this.Anchor2, transform.Rotation{b.rot.X, b.rot.Y})
 
 	// Calculate mass tensor
 	k_tensor(a, b, this.r1, this.r2, &this.k1, &this.k2)
 
 	// compute max impulse
-	this.jMaxLen = this.maxForce * dt
+	this.jMaxLen = this.MaxForce * dt
 
 	// calculate bias velocity
 	delta := vect.Sub(vect.Add(b.p, this.r2), vect.Add(a.p, this.r1))
 
-	this.bias = vect.Clamp(vect.Mult(delta, -bias_coef(this.errorBias, dt)/dt), this.maxBias)
+	this.bias = vect.Clamp(vect.Mult(delta, -bias_coef(this.ErrorBias, dt)/dt), this.MaxBias)
 }
 
 func bias_coef(errorBias, dt vect.Float) vect.Float {
@@ -52,14 +58,13 @@ func (this *PivotJoint) ApplyImpulse() {
 	r1, r2 := this.r1, this.r2
 
 	// compute relative velocity
-	vr := relative_velocity(a, b, r1, r2)
+	vr := relative_velocity2(a, b, r1, r2)
 
 	// compute normal impulse
 	j := mult_k(vect.Sub(this.bias, vr), this.k1, this.k2)
 	jOld := this.jAcc
 	this.jAcc = vect.Clamp(vect.Add(this.jAcc, j), this.jMaxLen)
 	j = vect.Sub(this.jAcc, jOld)
-
 	// apply impulse
 	apply_impulses(a, b, this.r1, this.r2, j)
 }
@@ -104,7 +109,7 @@ func k_tensor(a, b *Body, r1, r2 vect.Vect, k1, k2 *vect.Vect) {
 	k22 += r2xsq
 
 	// invert
-	determinant := k11*k22 - k12*k21
+	determinant := (k11 * k22) - (k12 * k21)
 	if determinant == 0 {
 		panic("Unsolvable constraint.")
 	}

@@ -7,43 +7,62 @@ const (
 )
 
 type ConstraintCallback interface {
-	CollisionPreSolve(constraint *Constraint)
-	CollisionPostSolve(constraint *Constraint)
+	CollisionPreSolve(constraint Constraint)
+	CollisionPostSolve(constraint Constraint)
 }
 
 type Constraint interface {
+	Constraint() *BasicConstraint
+	PreSolve()
+	PostSolve()
 	PreStep(dt vect.Float)
 	ApplyCachedImpulse(dt_coef vect.Float)
-	ApplyImpluse()
-	Impluse() vect.Float
+	ApplyImpulse()
+	Impulse() vect.Float
 }
 
 type BasicConstraint struct {
 	BodyA, BodyB    *Body
 	space           *Space
-	maxForce        vect.Float
-	errorBias       vect.Float
-	maxBias         vect.Float
+	MaxForce        vect.Float
+	ErrorBias       vect.Float
+	MaxBias         vect.Float
 	CallbackHandler ConstraintCallback
 	UserData        Data
 }
 
 func NewConstraint(a, b *Body) BasicConstraint {
-	return BasicConstraint{BodyA: a, BodyB: b, maxForce: Inf, maxBias: Inf, errorBias: errorBias}
+	return BasicConstraint{BodyA: a, BodyB: b, MaxForce: Inf, MaxBias: Inf, ErrorBias: errorBias}
+}
+
+func (this *BasicConstraint) Constraint() *BasicConstraint {
+	return this
 }
 
 func (this *BasicConstraint) PreStep(dt vect.Float) {
-
+	panic("empty constraint")
 }
 
 func (this *BasicConstraint) ApplyCachedImpulse(dt_coef vect.Float) {
-
+	panic("empty constraint")
 }
 
-func (this *BasicConstraint) ApplyImpluse() {
-
+func (this *BasicConstraint) ApplyImpulse() {
+	panic("empty constraint")
 }
 
-func (this *BasicConstraint) Impluse() vect.Float {
-	return 0
+func (this *BasicConstraint) Impulse() vect.Float {
+	panic("empty constraint")
+}
+
+func (this *BasicConstraint) PreSolve() {
+	if this.CallbackHandler != nil {
+		this.CallbackHandler.CollisionPreSolve(this)
+	}
+}
+
+func (this *BasicConstraint) PostSolve() {
+	if this.CallbackHandler != nil {
+		this.CallbackHandler.CollisionPostSolve(this)
+	}
 }
