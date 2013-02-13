@@ -5,9 +5,9 @@ import (
 	"time"
 )
 
-type SpatialIndexQueryFunc func(a, b Indexable, data Data)
+type SpatialIndexQueryFunc func(a, b Indexable)
 type ReindexShapesFunc func(a, b *Shape, space *Space)
-type HashSetIterator func(node *Node, data Data)
+type HashSetIterator func(node *Node)
 
 type TreeType byte
 
@@ -17,10 +17,11 @@ type SpatialIndex struct {
 	staticIndex, dynamicIndex SpatialIndexClass
 }
 
-func SpatialIndexCollideStatic(dynamicIndex, staticIndex *SpatialIndex, fnc SpatialIndexQueryFunc, data Data) {
+func SpatialIndexCollideStatic(dynamicIndex, staticIndex *SpatialIndex, fnc SpatialIndexQueryFunc) {
 	if staticIndex.Count() > 0 {
-		context := dynamicToStaticContext{staticIndex, fnc, data}
-		dynamicIndex.Each(dynamicToStaticIter, context)
+		dynamicIndex.Each(func(node *Node) {
+			staticIndex.Query(node.obj, node.obj.AABB(), fnc)
+		})
 	}
 }
 
@@ -42,21 +43,6 @@ func NewSpartialIndex(class SpatialIndexClass, staticIndex *SpatialIndex) (index
 	return
 }
 
-type dynamicToStaticContext struct {
-	staticIndex *SpatialIndex
-	queryFunc   SpatialIndexQueryFunc
-	data        Data
-}
-
-func (d dynamicToStaticContext) Space() *Space {
-	return nil
-}
-
-func dynamicToStaticIter(node *Node, data Data) {
-	context := data.(dynamicToStaticContext)
-	context.staticIndex.Query(node.obj, node.obj.AABB(), context.queryFunc, context.data)
-}
-
 type Indexable interface {
 	Hashable
 	AABB() AABB
@@ -74,7 +60,7 @@ type SpatialIndexClass interface {
 	Destroy()
 
 	Count() int
-	Each(fnc HashSetIterator, data Data)
+	Each(fnc HashSetIterator)
 
 	Contains(obj Indexable) bool
 	Insert(obj Indexable)
@@ -82,10 +68,10 @@ type SpatialIndexClass interface {
 
 	Reindex()
 	ReindexObject(obj Indexable)
-	ReindexQuery(fnc SpatialIndexQueryFunc, data Data)
+	ReindexQuery(fnc SpatialIndexQueryFunc)
 
 	Stamp() time.Duration
 
-	Query(obj Indexable, aabb AABB, fnc SpatialIndexQueryFunc, data Data)
-	SegmentQuery(obj Indexable, a, b vect.Vect, t_exit vect.Float, fnc func(), data Data)
+	Query(obj Indexable, aabb AABB, fnc SpatialIndexQueryFunc)
+	SegmentQuery(obj Indexable, a, b vect.Vect, t_exit vect.Float, fnc func())
 }

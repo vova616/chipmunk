@@ -183,7 +183,9 @@ func (space *Space) Step(dt vect.Float) {
 	}
 
 	start := time.Now()
-	space.activeShapes.ReindexQuery(spaceCollideShapes, space)
+	space.activeShapes.ReindexQuery(func(a, b Indexable) {
+		SpaceCollideShapes(a.Shape(), b.Shape(), space)
+	})
 	end := time.Now()
 
 	space.ReindexQueryTime = end.Sub(start)
@@ -341,6 +343,47 @@ func (space *Space) Space() *Space {
 	return space
 }
 
+func (space *Space) SpacePointQueryFirst(point vect.Vect, layers Layer, group Group) (shape *Shape) {
+
+	found := false
+	pointFunc := func(a, b Indexable) {
+		if found {
+			return
+		}
+		shapeB := b.Shape()
+		shapeA := a.Shape()
+		if !queryReject(shapeA, shapeB) {
+			contacts := space.pullContactBuffer()
+			numContacts := collide(contacts, shapeA, shapeB)
+			if numContacts <= 0 {
+				space.pushContactBuffer(contacts)
+				return
+			}
+			shape = shapeB
+			found = true
+		}
+	}
+
+	dot := NewCircle(point, 0.5)
+	dot.Layer = layers
+	dot.Group = group
+	space.staticShapes.Query(dot, dot.AABB(), pointFunc)
+
+	return
+}
+
+/*
+func (space *Space) SpacePointQuery(point vect.Vect, layers Layer, group Group, cpSpacePointQueryFunc func, void *data)
+{
+	struct PointQueryContext context = {point, layers, group, func, data};
+	cpBB bb = cpBBNewForCircle(point, 0.0f);
+
+	cpSpaceLock(space); {
+    cpSpatialIndexQuery(space->activeShapes, &context, bb, (cpSpatialIndexQueryFunc)PointQuery, data);
+    cpSpatialIndexQuery(space->staticShapes, &context, bb, (cpSpatialIndexQueryFunc)PointQuery, data);
+	} cpSpaceUnlock(space, cpTrue);
+}
+*/
 func (space *Space) ActiveBody(body *Body) error {
 	if body.IsRogue() {
 		return errors.New("Internal error: Attempting to activate a rouge body.")
@@ -513,27 +556,6 @@ func (space *Space) CreateArbiter(sa, sb *Shape) *Arbiter {
 
 func spaceCollideShapes(a, b Indexable, null Data) {
 	SpaceCollideShapes(a.Shape(), b.Shape(), a.Shape().space)
-}
-
-func (space *Space) pullContactBuffer() (contacts []*Contact) {
-	if len(space.ContactBuffer) > 0 {
-		contacts, space.ContactBuffer = space.ContactBuffer[len(space.ContactBuffer)-1], space.ContactBuffer[:len(space.ContactBuffer)-1]
-	} else {
-		for i := 0; i < ContactBufferSize/2; i++ {
-			ccs := make([]*Contact, MaxPoints)
-
-			for i := 0; i < MaxPoints; i++ {
-				ccs[i] = &Contact{}
-			}
-			space.ContactBuffer = append(space.ContactBuffer, ccs)
-		}
-		contacts, space.ContactBuffer = space.ContactBuffer[len(space.ContactBuffer)-1], space.ContactBuffer[:len(space.ContactBuffer)-1]
-	}
-	return
-}
-
-func (space *Space) pushContactBuffer(contacts []*Contact) {
-	space.ContactBuffer = append(space.ContactBuffer, contacts)
 }
 
 func SpaceCollideShapes(a, b *Shape, space *Space) {
@@ -759,4 +781,25 @@ func (space *Space) RemoveShape(shape *Shape) {
 	shape.Body = nil
 	shape.UserData = nil
 	shape.ShapeClass = nil
+}
+
+func (space *Space) pullContactBuffer() (contacts []*Contact) {
+	if len(space.ContactBuffer) > 0 {
+		contacts, space.ContactBuffer = space.ContactBuffer[len(space.ContactBuffer)-1], space.ContactBuffer[:len(space.ContactBuffer)-1]
+	} else {
+		for i := 0; i < ContactBufferSize/2; i++ {
+			ccs := make([]*Contact, MaxPoints)
+
+			for i := 0; i < MaxPoints; i++ {
+				ccs[i] = &Contact{}
+			}
+			space.ContactBuffer = append(space.ContactBuffer, ccs)
+		}
+		contacts, space.ContactBuffer = space.ContactBuffer[len(space.ContactBuffer)-1], space.ContactBuffer[:len(space.ContactBuffer)-1]
+	}
+	return
+}
+
+func (space *Space) pushContactBuffer(contacts []*Contact) {
+	space.ContactBuffer = append(space.ContactBuffer, contacts)
 }

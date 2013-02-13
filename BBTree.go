@@ -7,13 +7,13 @@ import (
 	"time"
 )
 
-var VoidQueryFunc = func(a, b Indexable, data Data) {}
+var VoidQueryFunc = func(a, b Indexable) {}
 
 type HashSet map[HashValue]*Node
 
-func (set HashSet) Each(fnc HashSetIterator, data Data) {
+func (set HashSet) Each(fnc HashSetIterator) {
 	for _, node := range set {
-		fnc(node, data)
+		fnc(node)
 	}
 }
 
@@ -201,12 +201,12 @@ func (tree *BBTree) LeafAddPairs(leaf *Node) {
 		dynamicRoot := GetRootIfTree(dynamicIndex)
 		if dynamicRoot != nil {
 			dynamicTree := GetTree(dynamicIndex)
-			context := MarkContext{dynamicTree, nil, nil, nil}
+			context := MarkContext{dynamicTree, nil, nil}
 			context.MarkLeafQuery(dynamicRoot, leaf, true)
 		}
 	} else {
 		staticRoot := GetRootIfTree(tree.SpatialIndex.staticIndex)
-		context := MarkContext{tree, staticRoot, VoidQueryFunc, nil}
+		context := MarkContext{tree, staticRoot, VoidQueryFunc}
 		context.MarkLeaf(leaf)
 	}
 }
@@ -417,15 +417,11 @@ func LeafUpdate(leaf *Node, tree *BBTree) bool {
 	return false
 }
 
-func (tree *BBTree) Each(fnc HashSetIterator, data Data) {
-	tree.leaves.Each(fnc, data)
+func (tree *BBTree) Each(fnc HashSetIterator) {
+	tree.leaves.Each(fnc)
 }
 
-func (tree *BBTree) Each2(fnc HashSetIterator, data Data) {
-	tree.leaves.Each(fnc, data)
-}
-
-func (tree *BBTree) ReindexQuery(fnc SpatialIndexQueryFunc, data Data) {
+func (tree *BBTree) ReindexQuery(fnc SpatialIndexQueryFunc) {
 	if tree.root == nil {
 		return
 	}
@@ -441,28 +437,28 @@ func (tree *BBTree) ReindexQuery(fnc SpatialIndexQueryFunc, data Data) {
 		staticRoot = staticIndex.root
 	}
 
-	context := MarkContext{tree, staticRoot, fnc, data}
+	context := MarkContext{tree, staticRoot, fnc}
 	context.MarkSubtree(tree.root)
 	if staticIndex != nil && staticRoot == nil {
-		SpatialIndexCollideStatic(tree.SpatialIndex, staticIndex.SpatialIndex, fnc, data)
+		SpatialIndexCollideStatic(tree.SpatialIndex, staticIndex.SpatialIndex, fnc)
 	}
 
 	tree.IncrementStamp()
 }
 
-func (tree *BBTree) Query(obj Indexable, aabb AABB, fnc SpatialIndexQueryFunc, data Data) {
+func (tree *BBTree) Query(obj Indexable, aabb AABB, fnc SpatialIndexQueryFunc) {
 	if tree.root != nil {
-		SubtreeQuery(tree.root, obj, aabb, fnc, data)
+		SubtreeQuery(tree.root, obj, aabb, fnc)
 	}
 }
 
-func SubtreeQuery(subtree *Node, obj Indexable, bb AABB, fnc SpatialIndexQueryFunc, data Data) {
+func SubtreeQuery(subtree *Node, obj Indexable, bb AABB, fnc SpatialIndexQueryFunc) {
 	if TestOverlap(subtree.bb, bb) {
 		if subtree.IsLeaf() {
-			fnc(obj, subtree.obj, data)
+			fnc(obj, subtree.obj)
 		} else {
-			SubtreeQuery(subtree.A, obj, bb, fnc, data)
-			SubtreeQuery(subtree.B, obj, bb, fnc, data)
+			SubtreeQuery(subtree.A, obj, bb, fnc)
+			SubtreeQuery(subtree.B, obj, bb, fnc)
 		}
 	}
 }
@@ -471,7 +467,6 @@ type MarkContext struct {
 	tree       *BBTree
 	staticRoot *Node
 	fnc        SpatialIndexQueryFunc
-	data       Data
 }
 
 func (context *MarkContext) MarkSubtree(subtree *Node) {
@@ -493,7 +488,7 @@ func (context *MarkContext) MarkLeafQuery(subtree, leaf *Node, left bool) {
 				if subtree.stamp < leaf.stamp {
 					context.tree.PairInsert(subtree, leaf)
 				}
-				context.fnc(leaf.obj, subtree.obj, context.data)
+				context.fnc(leaf.obj, subtree.obj)
 			}
 		} else {
 			context.MarkLeafQuery(subtree.A, leaf, left)
@@ -522,7 +517,7 @@ func (context *MarkContext) MarkLeaf(leaf *Node) {
 		i := 0
 		for pair != nil {
 			if leaf == pair.b.leaf {
-				context.fnc(pair.a.leaf.obj, leaf.obj, context.data)
+				context.fnc(pair.a.leaf.obj, leaf.obj)
 				pair = pair.b.next
 			} else {
 				pair = pair.a.next
