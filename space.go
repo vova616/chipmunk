@@ -532,6 +532,27 @@ func spaceCollideShapes(a, b Indexable, null Data) {
 	SpaceCollideShapes(a.Shape(), b.Shape(), a.Shape().space)
 }
 
+func (space *Space) pullContactBuffer() (contacts []*Contact) {
+	if len(space.ContactBuffer) > 0 {
+		contacts, space.ContactBuffer = space.ContactBuffer[len(space.ContactBuffer)-1], space.ContactBuffer[:len(space.ContactBuffer)-1]
+	} else {
+		for i := 0; i < ContactBufferSize/2; i++ {
+			ccs := make([]*Contact, MaxPoints)
+
+			for i := 0; i < MaxPoints; i++ {
+				ccs[i] = &Contact{}
+			}
+			space.ContactBuffer = append(space.ContactBuffer, ccs)
+		}
+		contacts, space.ContactBuffer = space.ContactBuffer[len(space.ContactBuffer)-1], space.ContactBuffer[:len(space.ContactBuffer)-1]
+	}
+	return
+}
+
+func (space *Space) pushContactBuffer(contacts []*Contact) {
+	space.ContactBuffer = append(space.ContactBuffer, contacts)
+}
+
 func SpaceCollideShapes(a, b *Shape, space *Space) {
 	if queryReject(a, b) {
 		return
@@ -550,26 +571,11 @@ func SpaceCollideShapes(a, b *Shape, space *Space) {
 	//}
 
 	// Narrow-phase collision detection.
-
-	var contacts []*Contact
-
-	if len(space.ContactBuffer) > 0 {
-		contacts, space.ContactBuffer = space.ContactBuffer[len(space.ContactBuffer)-1], space.ContactBuffer[:len(space.ContactBuffer)-1]
-	} else {
-		for i := 0; i < ContactBufferSize/2; i++ {
-			ccs := make([]*Contact, MaxPoints)
-
-			for i := 0; i < MaxPoints; i++ {
-				ccs[i] = &Contact{}
-			}
-			space.ContactBuffer = append(space.ContactBuffer, ccs)
-		}
-		contacts, space.ContactBuffer = space.ContactBuffer[len(space.ContactBuffer)-1], space.ContactBuffer[:len(space.ContactBuffer)-1]
-	}
+	contacts := space.pullContactBuffer()
 
 	numContacts := collide(contacts, a, b)
 	if numContacts <= 0 {
-		space.ContactBuffer = append(space.ContactBuffer, contacts)
+		space.pushContactBuffer(contacts)
 		return // Shapes are not colliding.
 	}
 
@@ -594,17 +600,13 @@ func SpaceCollideShapes(a, b *Shape, space *Space) {
 	}
 	arb.update(a, b, contacts, numContacts)
 	if oldContacts != nil {
-		space.ContactBuffer = append(space.ContactBuffer, oldContacts)
+		space.pushContactBuffer(oldContacts)
 	}
 
 	space.cachedArbiters[arbHashID] = arb
 
-	//cpArbiter *arb = (cpArbiter *)cpHashSetInsert(space->cachedArbiters, arbHashID, shape_pair, space, (cpHashSetTransFunc)cpSpaceArbiterSetTrans);
-	//cpArbiterUpdate(arb, contacts, numContacts, handler, a, b);
-
 	// Call the begin function first if it's the first step
 	if arb.state == arbiterStateFirstColl {
-		// && (!b.Body.CallbackHandler.CollisionEnter(arb) || !a.Body.CallbackHandler.CollisionEnter(arb)
 		ignore := false
 		if b.Body.CallbackHandler != nil {
 			ignore = !b.Body.CallbackHandler.CollisionEnter(arb)
@@ -655,7 +657,7 @@ func SpaceCollideShapes(a, b *Shape, space *Space) {
 
 func queryReject(a, b *Shape) bool {
 	//|| (a.Layer & b.Layer) != 0
-	return a.Body == b.Body || (a.Group != 0 && a.Group == b.Group) || (a.Layer&b.Layer) == 0 || (math.IsInf(float64(a.Body.m), 0) && math.IsInf(float64(b.Body.m), 0)) || !TestOverlap(a.BB, b.BB)
+	return a.Body == b.Body || (a.Group != 0 && a.Group == b.Group) || (a.Layer&b.Layer) == 0 || (math.IsInf(float64(a.Body.m), 0) && math.IsInf(float64(b.Body.m), 0)) || !TestOverlapPtr(&a.BB, &b.BB)
 }
 
 func (space *Space) AddBody(body *Body) *Body {

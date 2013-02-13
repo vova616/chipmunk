@@ -107,7 +107,7 @@ func (tree *BBTree) NewLeaf(obj Indexable) *Node {
 
 func (tree *BBTree) NodeNew(a, b *Node) *Node {
 	node := tree.NodeFromPool()
-	node.bb = Combine(a.bb, b.bb)
+	node.bb = CombinePtr(&a.bb, &b.bb)
 
 	node.NodeSetA(a)
 	node.NodeSetB(b)
@@ -146,13 +146,12 @@ func (tree *BBTree) SubtreeInsert(subtree, leaf *Node) *Node {
 		return tree.NodeNew(leaf, subtree)
 	}
 
-	cost_a := subtree.B.bb.Area() + MergedArea(subtree.A.bb, leaf.bb)
-	cost_b := subtree.A.bb.Area() + MergedArea(subtree.B.bb, leaf.bb)
+	cost_a := subtree.B.bb.Area() + MergedAreaPtr(&subtree.A.bb, &leaf.bb)
+	cost_b := subtree.A.bb.Area() + MergedAreaPtr(&subtree.B.bb, &leaf.bb)
 
 	if cost_a == cost_b {
-
-		cost_a = Proximity(subtree.A.bb, leaf.bb)
-		cost_b = Proximity(subtree.B.bb, leaf.bb)
+		cost_a = ProximityPtr(&subtree.A.bb, &leaf.bb)
+		cost_b = ProximityPtr(&subtree.B.bb, &leaf.bb)
 	}
 
 	if cost_b < cost_a {
@@ -161,7 +160,7 @@ func (tree *BBTree) SubtreeInsert(subtree, leaf *Node) *Node {
 		subtree.NodeSetA(tree.SubtreeInsert(subtree.A, leaf))
 	}
 
-	subtree.bb = Combine(subtree.bb, leaf.bb)
+	subtree.bb = CombinePtr(&subtree.bb, &leaf.bb)
 
 	return subtree
 }
@@ -324,7 +323,7 @@ func (tree *BBTree) NodeReplaceChild(parent, child, value *Node) {
 	}
 
 	for node := parent; node != nil; node = node.parent {
-		node.bb = Combine(node.A.bb, node.B.bb)
+		node.bb = CombinePtr(&node.A.bb, &node.B.bb)
 	}
 }
 
@@ -402,9 +401,8 @@ func (tree *BBTree) PairsClear(leaf *Node) {
 
 func LeafUpdate(leaf *Node, tree *BBTree) bool {
 	root := tree.root
-	bb := leaf.obj.AABB()
 
-	if !leaf.bb.Contains(bb) {
+	if !leaf.bb.Contains(leaf.obj.AABB()) {
 		leaf.bb = tree.GetBB(leaf.obj)
 
 		root = tree.SubtreeRemove(root, leaf)
@@ -487,7 +485,7 @@ func (context *MarkContext) MarkSubtree(subtree *Node) {
 
 func (context *MarkContext) MarkLeafQuery(subtree, leaf *Node, left bool) {
 
-	if TestOverlap(leaf.bb, subtree.bb) {
+	if TestOverlapPtr(&leaf.bb, &subtree.bb) {
 		if subtree.IsLeaf() {
 			if left {
 				context.tree.PairInsert(leaf, subtree)

@@ -38,6 +38,14 @@ func (aabb *AABB) Contains(other AABB) bool {
 		aabb.Upper.Y >= other.Upper.Y
 }
 
+//returns if other is contained inside this aabb.
+func (aabb *AABB) ContainsPtr(other *AABB) bool {
+	return aabb.Lower.X <= other.Lower.X &&
+		aabb.Upper.X >= other.Upper.X &&
+		aabb.Lower.Y <= other.Lower.Y &&
+		aabb.Upper.Y >= other.Upper.Y
+}
+
 //returns if v is contained inside this aabb.
 func (aabb *AABB) ContainsVect(v vect.Vect) bool {
 	return aabb.Lower.X <= v.X &&
@@ -63,6 +71,14 @@ func Combine(a, b AABB) AABB {
 	}
 }
 
+//returns an AABB that holds both a and b.
+func CombinePtr(a, b *AABB) AABB {
+	return AABB{
+		vect.Min(a.Lower, b.Lower),
+		vect.Max(a.Upper, b.Upper),
+	}
+}
+
 //returns an AABB that holds both a and v.
 func Expand(a AABB, v vect.Vect) AABB {
 	return AABB{
@@ -76,12 +92,16 @@ func (aabb *AABB) Area() vect.Float {
 	return (aabb.Upper.X - aabb.Lower.X) * (aabb.Upper.Y - aabb.Lower.Y)
 }
 
-func INLI_MergedArea(a, b AABB) vect.Float {
+func MergedArea(a, b AABB) vect.Float {
 	return (vect.FMax(a.Upper.X, b.Upper.X) - vect.FMin(a.Lower.X, b.Lower.X)) * (vect.FMax(a.Upper.Y, b.Upper.Y) - vect.FMin(a.Lower.Y, b.Lower.Y))
 }
 
-func MergedArea(a, b AABB) vect.Float {
-	return INLI_MergedArea(a, b)
+func MergedAreaPtr(a, b *AABB) vect.Float {
+	return (vect.FMax(a.Upper.X, b.Upper.X) - vect.FMin(a.Lower.X, b.Lower.X)) * (vect.FMax(a.Upper.Y, b.Upper.Y) - vect.FMin(a.Lower.Y, b.Lower.Y))
+}
+
+func ProximityPtr(a, b *AABB) vect.Float {
+	return vect.FAbs(a.Lower.X+a.Upper.X-b.Lower.X-b.Upper.X) + vect.FAbs(a.Lower.Y+a.Upper.Y-b.Lower.Y-b.Upper.Y)
 }
 
 func Proximity(a, b AABB) vect.Float {
@@ -105,5 +125,9 @@ func TestOverlap2(a, b AABB) bool {
 }
 
 func TestOverlap(a, b AABB) bool {
+	return (a.Lower.X <= b.Upper.X && b.Lower.X <= a.Upper.X && a.Lower.Y <= b.Upper.Y && b.Lower.Y <= a.Upper.Y)
+}
+
+func TestOverlapPtr(a, b *AABB) bool {
 	return (a.Lower.X <= b.Upper.X && b.Lower.X <= a.Upper.X && a.Lower.Y <= b.Upper.Y && b.Lower.Y <= a.Upper.Y)
 }
