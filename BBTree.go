@@ -182,7 +182,7 @@ func (tree *BBTree) GetMasterTree() SpatialIndexClass {
 func (tree *BBTree) GetMasterTreeStamp() time.Duration {
 	dynamicTree := tree.SpatialIndex.dynamicIndex
 	if dynamicTree != nil {
-		return dynamicTree.stamp
+		return dynamicTree.Stamp()
 	}
 	return tree.stamp
 }
