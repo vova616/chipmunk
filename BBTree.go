@@ -116,11 +116,9 @@ func (tree *BBTree) NodeNew(a, b *Node) *Node {
 }
 
 func (tree *BBTree) GetBB(obj Indexable) AABB {
-	bb := obj.AABB()
-
 	v, ok := obj.Velocity()
 	if ok {
-
+		bb := obj.AABB()
 		coef := vect.Float(0.1)
 
 		l := bb.Lower.X
@@ -136,7 +134,7 @@ func (tree *BBTree) GetBB(obj Indexable) AABB {
 		return NewAABB(l+vect.FMin(-x, v.X), b+vect.FMin(-y, v.Y), r+vect.FMax(x, v.X), t+vect.FMax(y, v.Y))
 	}
 
-	return bb
+	return obj.AABB()
 }
 
 func (tree *BBTree) SubtreeInsert(subtree, leaf *Node) *Node {
@@ -179,6 +177,14 @@ func (tree *BBTree) GetMasterTree() SpatialIndexClass {
 		return dynamicTree
 	}
 	return tree
+}
+
+func (tree *BBTree) GetMasterTreeStamp() time.Duration {
+	dynamicTree := tree.SpatialIndex.dynamicIndex
+	if dynamicTree != nil {
+		return dynamicTree.stamp
+	}
+	return tree.stamp
 }
 
 func (tree *BBTree) Stamp() time.Duration {
@@ -239,12 +245,10 @@ func (tree *BBTree) PairInsert(a, b *Node) {
 	nextA := a.pairs
 	nextB := b.pairs
 	pair := tree.PairFromPool()
-	temp := Pair{Thread{nil, a, nextA}, Thread{nil, b, nextB}}
-
 	b.pairs = pair
 	a.pairs = pair
 
-	*pair = temp
+	*pair = Pair{Thread{nil, a, nextA}, Thread{nil, b, nextB}}
 
 	if nextA != nil {
 		if nextA.a.leaf == a {
@@ -499,7 +503,7 @@ func (context *MarkContext) MarkLeafQuery(subtree, leaf *Node, left bool) {
 
 func (context *MarkContext) MarkLeaf(leaf *Node) {
 	tree := context.tree
-	if leaf.stamp == tree.GetMasterTree().Stamp() {
+	if leaf.stamp == tree.GetMasterTreeStamp() {
 		staticRoot := context.staticRoot
 		if staticRoot != nil {
 			context.MarkLeafQuery(staticRoot, leaf, false)
