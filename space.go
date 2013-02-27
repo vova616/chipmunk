@@ -171,15 +171,15 @@ func (space *Space) Step(dt vect.Float) {
 	space.stamp++
 
 	for _, body := range bodies {
-		body.UpdatePosition(dt)
+		if body.Enabled {
+			body.UpdatePosition(dt)
+		}
 	}
 
 	for _, body := range bodies {
-		body.UpdateShapes()
-		//d := body.Shapes[0].GetAsBox()
-		//if d != nil {
-		//	fmt.Println(d.verts, body.Shapes[0].AABB(), body.Angle(), body.Position())
-		//}
+		if body.Enabled {
+			body.UpdateShapes()
+		}
 	}
 
 	start := time.Now()
@@ -196,7 +196,8 @@ func (space *Space) Step(dt vect.Float) {
 	for h, arb := range space.cachedArbiters {
 		ticks := space.stamp - arb.stamp
 		deleted := (arb.BodyA.deleted || arb.BodyB.deleted)
-		if (ticks >= 1 && arb.state != arbiterStateCached) || deleted {
+		disabled := !(arb.BodyA.Enabled || arb.BodyB.Enabled)
+		if (ticks >= 1 && arb.state != arbiterStateCached) || deleted || disabled {
 			arb.state = arbiterStateCached
 			if arb.BodyA.CallbackHandler != nil {
 				arb.BodyA.CallbackHandler.CollisionExit(arb)
@@ -229,11 +230,13 @@ func (space *Space) Step(dt vect.Float) {
 	damping := vect.Float(math.Pow(float64(space.damping), float64(dt)))
 
 	for _, body := range bodies {
-		if body.IgnoreGravity {
-			body.UpdateVelocity(vect.Vector_Zero, damping, dt)
-			continue
+		if body.Enabled {
+			if body.IgnoreGravity {
+				body.UpdateVelocity(vect.Vector_Zero, damping, dt)
+				continue
+			}
+			body.UpdateVelocity(space.Gravity, damping, dt)
 		}
-		body.UpdateVelocity(space.Gravity, damping, dt)
 	}
 
 	dt_coef := vect.Float(0)
@@ -698,12 +701,12 @@ func SpaceCollideShapes(a, b *Shape, space *Space) {
 }
 
 func queryRejectShapes(a, b *Shape) bool {
-	return a == b || (a.Group != 0 && a.Group == b.Group) || (a.Layer&b.Layer) == 0
+	return a == b || (a.Group != 0 && a.Group == b.Group) || (a.Layer&b.Layer) == 0 || (a.Body != nil && !a.Body.Enabled) || (b.Body != nil && !b.Body.Enabled)
 }
 
 func queryReject(a, b *Shape) bool {
 	//|| (a.Layer & b.Layer) != 0
-	return a.Body == b.Body || (a.Group != 0 && a.Group == b.Group) || (a.Layer&b.Layer) == 0 || (math.IsInf(float64(a.Body.m), 0) && math.IsInf(float64(b.Body.m), 0)) || !TestOverlapPtr(&a.BB, &b.BB)
+	return a.Body == b.Body || (a.Group != 0 && a.Group == b.Group) || (a.Layer&b.Layer) == 0 || !a.Body.Enabled || !b.Body.Enabled || (math.IsInf(float64(a.Body.m), 0) && math.IsInf(float64(b.Body.m), 0)) || !TestOverlapPtr(&a.BB, &b.BB)
 }
 
 func (space *Space) AddBody(body *Body) *Body {

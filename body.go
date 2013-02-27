@@ -90,6 +90,7 @@ type Body struct {
 	hash HashValue
 
 	deleted bool
+	Enabled bool
 
 	idleTime vect.Float
 
@@ -105,6 +106,7 @@ func NewBodyStatic() (body *Body) {
 	body.IgnoreGravity = true
 	body.node.IdleTime = Inf
 	body.SetAngle(0)
+	body.Enabled = true
 
 	return
 }
@@ -116,6 +118,7 @@ func NewBody(mass, i vect.Float) (body *Body) {
 	body.SetMass(mass)
 	body.SetMoment(i)
 	body.SetAngle(0)
+	body.Enabled = true
 
 	return
 }
