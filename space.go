@@ -218,8 +218,9 @@ func (space *Space) Step(dt vect.Float) {
 
 	slop := space.collisionSlop
 	biasCoef := vect.Float(1.0 - math.Pow(float64(space.collisionBias), float64(dt)))
+	invdt := vect.Float(1 / dt)
 	for _, arb := range space.Arbiters {
-		arb.preStep(vect.Float(1/dt), slop, biasCoef)
+		arb.preStep(invdt, slop, biasCoef)
 	}
 
 	for _, con := range space.Constraints {
@@ -530,7 +531,7 @@ func (space *Space) ProcessComponents(dt vect.Float) {
 				cpBody *body = (cpBody*)bodies->arr[i];
 
 				if(ComponentRoot(body) == NULL){
-					// Body not in a component yet. Perform a DFS to flood fill mark 
+					// Body not in a component yet. Perform a DFS to flood fill mark
 					// the component in the contact graph using this body as the root.
 					FloodFillComponent(body, body);
 
@@ -660,7 +661,7 @@ func SpaceCollideShapes(a, b *Shape, space *Space) {
 			ignore = ignore || !a.Body.CallbackHandler.CollisionEnter(arb)
 		}
 		if ignore {
-			arb.Ignore() // permanently ignore the collision until separation 
+			arb.Ignore() // permanently ignore the collision until separation
 		}
 	}
 
