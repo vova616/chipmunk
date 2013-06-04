@@ -186,9 +186,7 @@ func (space *Space) Step(dt vect.Float) {
 	space.activeShapes.ReindexQuery(func(a, b Indexable) {
 		SpaceCollideShapes(a.Shape(), b.Shape(), space)
 	})
-	end := time.Now()
-
-	space.ReindexQueryTime = end.Sub(start)
+	space.ReindexQueryTime = time.Since(start)
 
 	//axc := space.activeShapes.SpatialIndexClass.(*BBTree)
 	//PrintTree(axc.root)
@@ -244,7 +242,7 @@ func (space *Space) Step(dt vect.Float) {
 	if prev_dt != 0 {
 		dt_coef = dt / prev_dt
 	}
-	//fmt.Println(len(space.Arbiters))
+
 	for _, arb := range space.Arbiters {
 		arb.applyCachedImpulse(dt_coef)
 	}
@@ -278,8 +276,7 @@ func (space *Space) Step(dt vect.Float) {
 	//for i:=0; i<8; i++ {
 	//	<-done
 	//}
-	end = time.Now()
-	space.ApplyImpulsesTime = end.Sub(start)
+	space.ApplyImpulsesTime = time.Since(start)
 
 	for _, con := range space.Constraints {
 		con.PostSolve()
