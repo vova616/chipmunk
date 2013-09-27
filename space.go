@@ -662,7 +662,7 @@ func SpaceCollideShapes(a, b *Shape, space *Space) {
 		}
 	}
 
-	preSolveResult := false
+	preSolveResult := true
 
 	// Ignore the arbiter if it has been flagged
 	if arb.state != arbiterStateIgnore {
