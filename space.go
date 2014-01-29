@@ -344,6 +344,14 @@ func (space *Space) Space() *Space {
 	return space
 }
 
+func (space *Space) Query(obj Indexable, aabb AABB, fnc SpatialIndexQueryFunc) {
+	space.activeShapes.Query(obj, aabb, fnc)
+}
+
+func (space *Space) QueryStatic(obj Indexable, aabb AABB, fnc SpatialIndexQueryFunc) {
+	space.staticShapes.Query(obj, aabb, fnc)
+}
+
 func (space *Space) SpacePointQueryFirst(point vect.Vect, layers Layer, group Group, checkSensors bool) (shape *Shape) {
 
 	found := false
