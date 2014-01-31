@@ -137,7 +137,7 @@ func NewSpace() (space *Space) {
 	return
 }
 
-func (space *Space) Destory() {
+func (space *Space) Destroy() {
 	space.Bodies = nil
 	space.sleepingComponents = nil
 	space.staticShapes = nil
