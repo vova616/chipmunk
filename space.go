@@ -138,6 +138,11 @@ func NewSpace() (space *Space) {
 }
 
 func (space *Space) Destory() {
+	fmt.Println("Destory is depricated, used Destroy instead.")
+	space.Destroy()
+}
+
+func (space *Space) Destroy() {
 	space.Bodies = nil
 	space.sleepingComponents = nil
 	space.staticShapes = nil
