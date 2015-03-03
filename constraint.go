@@ -1,6 +1,6 @@
 package chipmunk
 
-import "github.com/vova616/chipmunk/vect"
+import "github.com/Seb-C/chipmunk/vect"
 
 const (
 	errorBias = 0.00179701029991443 //cpfpow(1.0f - 0.1f, 60.0f)

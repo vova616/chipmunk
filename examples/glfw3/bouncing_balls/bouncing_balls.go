@@ -3,8 +3,8 @@ package main
 import (
 	"github.com/go-gl/gl/v2.1/gl"
 	"github.com/go-gl/glfw/v3.1/glfw"
-	"github.com/vova616/chipmunk"
-	"github.com/vova616/chipmunk/vect"
+	"github.com/Seb-C/chipmunk"
+	"github.com/Seb-C/chipmunk/vect"
 	"math"
 	"log"
 	"math/rand"

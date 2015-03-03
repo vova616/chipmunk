@@ -3,8 +3,8 @@ package chipmunk
 import (
 	"errors"
 	"fmt"
-	"github.com/vova616/chipmunk/transform"
-	"github.com/vova616/chipmunk/vect"
+	"github.com/Seb-C/chipmunk/transform"
+	"github.com/Seb-C/chipmunk/vect"
 	//"github.com/davecgh/go-spew/spew"
 	"math"
 	"time"

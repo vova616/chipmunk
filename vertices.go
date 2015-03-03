@@ -1,7 +1,7 @@
 package chipmunk
 
 import ( 
-	"github.com/vova616/chipmunk/vect"
+	"github.com/Seb-C/chipmunk/vect"
 )
 
 // Wrapper around []vect.Vect.

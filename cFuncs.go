@@ -129,7 +129,7 @@ void Impulse(Body *a, Body *b, Contact* con, float surfx, float surfy, float u) 
 /*
 import "C"
 import (
-	. "github.com/vova616/chipmunk/vect"
+	. "github.com/Seb-C/chipmunk/vect"
 	"unsafe"
 )
 
