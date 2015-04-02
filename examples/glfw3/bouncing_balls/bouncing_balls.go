@@ -1,11 +1,12 @@
 package main
 
 import (
-	"github.com/go-gl/gl"
-	glfw "github.com/go-gl/glfw3"
+	"github.com/go-gl/gl/v2.1/gl"
+	"github.com/go-gl/glfw/v3.1/glfw"
 	"github.com/vova616/chipmunk"
 	"github.com/vova616/chipmunk/vect"
 	"math"
+	"log"
 	"math/rand"
 	"os"
 	"runtime"
@@ -116,7 +117,7 @@ func createBodies() {
 func onResize(window *glfw.Window, w, h int) {
 	w, h = window.GetSize() // query window to get screen pixels
 	width, height := window.GetFramebufferSize()
-	gl.Viewport(0, 0, width, height)
+	gl.Viewport(0, 0, int32(width), int32(height))
 	gl.MatrixMode(gl.PROJECTION)
 	gl.LoadIdentity()
 	gl.Ortho(0, float64(w), 0, float64(h), -1, 1)
@@ -126,20 +127,26 @@ func onResize(window *glfw.Window, w, h int) {
 }
 
 func main() {
+	runtime.LockOSThread()
+
 	// initialize glfw
-	if !glfw.Init() {
-		panic("Failed to initialize GLFW")
+	if err := glfw.Init(); err != nil {
+		log.Fatalln("Failed to initialize GLFW: ", err)
 	}
 	defer glfw.Terminate()
 
 	// create window
 	window, err := glfw.CreateWindow(600, 600, os.Args[0], nil, nil)
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 	window.SetFramebufferSizeCallback(onResize)
-
 	window.MakeContextCurrent()
+
+	if err := gl.Init(); err != nil {
+		log.Fatal(err)
+	}
+
 	// set up opengl context
 	onResize(window, 600, 600)
 
