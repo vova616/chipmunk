@@ -348,11 +348,15 @@ func (body *Body) UpdatePosition(dt vect.Float) {
 	body.w_bias = 0.0
 }
 
-func (body *Body) UpdateVelocity(gravity vect.Vect, damping, dt vect.Float) {
+func (body *Body) updateVelocityProxy(gravity vect.Vect, damping, dt vect.Float) {
 	if body.UpdateVelocityFunc != nil {
 		body.UpdateVelocityFunc(body, gravity, damping, dt)
 		return
 	}
+	body.UpdateVelocity(gravity, damping, dt)
+}
+
+func (body *Body) UpdateVelocity(gravity vect.Vect, damping, dt vect.Float) {
 	body.v = vect.Add(vect.Mult(body.v, damping), vect.Mult(vect.Add(gravity, vect.Mult(body.f, body.m_inv)), dt))
 
 	body.w = (body.w * damping) + (body.t * body.i_inv * dt)

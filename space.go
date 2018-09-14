@@ -236,10 +236,10 @@ func (space *Space) Step(dt vect.Float) {
 	for _, body := range bodies {
 		if body.Enabled {
 			if body.IgnoreGravity {
-				body.UpdateVelocity(vect.Vector_Zero, damping, dt)
+				body.updateVelocityProxy(vect.Vector_Zero, damping, dt)
 				continue
 			}
-			body.UpdateVelocity(space.Gravity, damping, dt)
+			body.updateVelocityProxy(space.Gravity, damping, dt)
 		}
 	}
 
