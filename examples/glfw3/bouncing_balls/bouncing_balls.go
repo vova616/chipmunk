@@ -1,3 +1,10 @@
+/*
+bouncing_balls is a simple non-interactive program showing use of the chipmunk package.
+
+The code is based on pymunk's bouncing_balls.py example.
+
+Needs glew and gflw2 headers to build.
+*/
 package main
 
 import (
@@ -20,10 +27,9 @@ var (
 	space       *chipmunk.Space
 	balls       []*chipmunk.Shape
 	staticLines []*chipmunk.Shape
-	deg2rad     = math.Pi / 180
 )
 
-// drawCircle draws a circle for the specified radius, rotation angle, and the specified number of sides
+// drawCircle draws a circle for the specified radius and number of sides
 func drawCircle(radius float64, sides int) {
 	gl.Begin(gl.LINE_LOOP)
 	for a := 0.0; a < 2*math.Pi; a += (2 * math.Pi / float64(sides)) {
